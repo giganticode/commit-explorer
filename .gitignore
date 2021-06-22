@@ -1,0 +1,14 @@
+**/__pycache__/
+**/.DS_Store/
+
+**/.idea/workspace.xml
+**/.idea/tasks.xml
+
+config/env/local.env
+
+commit_explorer.egg-info
+
+storage
+software
+repo-cache
+github.token
