@@ -22,7 +22,8 @@ setup(
         "jsons>=1.4.2,<5",
         "PyGithub>=1.55,<2",
         "pygit2>=1.6.0,<2",
-        "tqdm>=4.61.1,<5"
+        "tqdm>=4.61.1,<5",
+        "gitpython>=3.1.18,<4"
     ],
     entry_points="""
         [console_scripts]

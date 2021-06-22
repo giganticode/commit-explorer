@@ -3,10 +3,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List
 
+import git
+import pygit2
 from tqdm import tqdm
 
 from commitexplorer import project_root
-from commitexplorer.common import Commit, Tool
+from commitexplorer.common import Commit, Tool, clone_github_project
 from commitexplorer.save import save_results
 from commitexplorer.tools import tool_id_map
 
@@ -56,8 +58,13 @@ def mine(job: Job, lock_path: Path):
                 result = tool.run(commit)
                 commit_results[tool_id] = result
             except Exception as ex:
-                print(f"Exception: {ex}, commit: {commit}")
-        save_results(commit_results, commit)
+                print(f"Exception: {ex}, tool: {tool_id}, commit: {commit}")
+        try:
+            path = clone_github_project(commit.owner, commit.repo)
+            all_shas = [commit.hexsha for commit in git.Repo(path).iter_commits()]
+            save_results(commit_results, commit, all_shas)
+        except Exception as ex:
+            print(f"Exception: {ex}, tool: commit: {commit}")
     lock_path.unlink()
 
 
