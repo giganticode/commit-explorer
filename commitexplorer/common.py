@@ -28,7 +28,7 @@ def get_path_by_sha(sha: str, create: bool = False) -> Path:
 
 def clone_github_project(owner: str, repo: str, token: Optional[str] = None) -> Path:
     path_to_repo: Path = PATH_TO_REPO_CACHE / owner / repo
-    if path_to_repo.exists():
+    if path_to_repo.exists() and any(path_to_repo.iterdir()):
         logger.debug(f"Project {owner}/{repo} already exists in project cache.")
         return path_to_repo
     github = Github(token)
