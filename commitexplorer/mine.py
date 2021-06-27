@@ -48,6 +48,8 @@ def get_tool_by_id(id: str) -> Tool:
 
 def mine(job: Job, lock_path: Path):
     tools = [(tool_id, get_tool_by_id(tool_id)) for tool_id in job.tools]
+    with open(project_root / 'github.token') as f:
+        token = f.read().strip()
     for commit in tqdm(job.commits):
         with open(lock_path, 'w') as f:
             f.write(f'{commit.owner}/{commit.repo}')
@@ -60,7 +62,7 @@ def mine(job: Job, lock_path: Path):
             except Exception as ex:
                 print(f"Exception: {ex}, tool: {tool_id}, commit: {commit}")
         try:
-            path = clone_github_project(commit.owner, commit.repo)
+            path = clone_github_project(commit.owner, commit.repo, token)
             all_shas = [commit.hexsha for commit in git.Repo(path).iter_commits()]
             save_results(commit_results, commit, all_shas)
         except Exception as ex:
