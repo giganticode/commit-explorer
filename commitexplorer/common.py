@@ -31,6 +31,7 @@ def clone_github_project(owner: str, repo: str, token: Optional[str] = None) -> 
     if path_to_repo.exists() and any(path_to_repo.iterdir()):
         logger.debug(f"Project {owner}/{repo} already exists in project cache.")
         return path_to_repo
+    print(f"Cloning {owner}/{repo} from GitHub...")
     github = Github(token)
     repo = github.get_repo(f'{owner}/{repo}')
     if not path_to_repo.exists():
