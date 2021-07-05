@@ -5,7 +5,8 @@ from pathlib import Path
 from typing import Any, Optional
 
 import pygit2 as pygit2
-from github import Github
+from github import Github, GithubException
+from github.GithubException import UnknownObjectException
 
 from commitexplorer import project_root
 
@@ -33,10 +34,14 @@ def clone_github_project(owner: str, repo: str, token: Optional[str] = None) -> 
         return path_to_repo
     print(f"Cloning {owner}/{repo} from GitHub...")
     github = Github(token)
-    repo = github.get_repo(f'{owner}/{repo}')
     if not path_to_repo.exists():
         path_to_repo.mkdir(parents=True)
-    pygit2.clone_repository(repo.git_url, str(path_to_repo))
+    try:
+        repo = github.get_repo(f'{owner}/{repo}')
+        pygit2.clone_repository(repo.git_url, str(path_to_repo))
+    except UnknownObjectException:
+        print(f'Project {owner}/{repo} not found. Was it removed?')
+        (path_to_repo / "NOT_FOUND").touch()
     return path_to_repo
 
 
