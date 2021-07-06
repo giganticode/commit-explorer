@@ -1,10 +1,10 @@
 import json
+import traceback
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List
 
 import git
-import pygit2
 from tqdm import tqdm
 
 from commitexplorer import project_root
@@ -60,13 +60,15 @@ def mine(job: Job, lock_path: Path):
                 result = tool.run(commit)
                 commit_results[tool_id] = result
             except Exception as ex:
-                print(f"Exception: {ex}, tool: {tool_id}, commit: {commit}")
+                print(f"Exception: {type(ex).__name__}, {ex}, tool: {tool_id}, commit: {commit}")
+                traceback.print_tb(ex.__traceback__)
         try:
             path = clone_github_project(commit.owner, commit.repo, token)
             all_shas = [commit.hexsha for commit in git.Repo(path).iter_commits()]
             save_results(commit_results, commit, all_shas)
         except Exception as ex:
-            print(f"Exception: {ex}, tool: commit: {commit}")
+            print(f"Exception: {type(ex).__name__}, {ex}, tool: commit: {commit}")
+            traceback.print_tb(ex.__traceback__)
     lock_path.unlink()
 
 

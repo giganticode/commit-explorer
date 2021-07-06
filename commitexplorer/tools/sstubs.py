@@ -22,7 +22,10 @@ class SStubs(Tool):
             self.token = f.read().strip()
 
     def run(self, commit: Commit) -> Dict:
-        path = clone_github_project(commit.owner, commit.repo, self.token)
+        path, metadata = clone_github_project(commit.owner, commit.repo, self.token, return_metadata=True)
+        if not Tool.is_java_project(metadata['langs']):
+            print(f'{type(self).__name__}: not a java project, skipping ...')
+            return {} #TODO remove duplication
         with tempfile.TemporaryDirectory() as f:
             project_path = Path(f) / 'project'
             project_path.mkdir()

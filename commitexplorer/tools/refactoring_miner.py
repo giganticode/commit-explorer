@@ -33,7 +33,10 @@ class RefactoringMiner(Tool):
             self.token = f.read().strip()
 
     def run(self, commit: Commit) -> Dict:
-        path = clone_github_project(commit.owner, commit.repo, self.token)
+        path, metadata = clone_github_project(commit.owner, commit.repo, self.token, return_metadata=True)
+        if not Tool.is_java_project(metadata['langs']):
+            print(f'{type(self).__name__}: not a java project, skipping ...')
+            return {}
         with tempfile.NamedTemporaryFile() as f:
             cmd = ["./RefactoringMiner", "-a", str(path), '-json', f.name]
             subprocess.run(cmd, cwd=self.path, capture_output=True, check=True)
