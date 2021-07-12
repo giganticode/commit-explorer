@@ -1,56 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="VcsDirectoryMappings">
-    <mapping directory="$PROJECT_DIR$/../bohr" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/../bohr-framework" vcs="Git" />
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/PyGithub/PyGithub" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/a-andreyev/a-andreyev.github.io" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/a-buck/airmozilla" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/a-day-old-bagel/at3" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/a-f-m/apath" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/a-ghorbani/a-ghorbani.github.io" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/a-gogo/agogo" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/a-h/atlas-oracle-linux-for-vagrant" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/a-know/a-know" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/a-labo/ababel" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/a-labo/abrowserify" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/a-labo/adocker" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/a-laugh/al-emacs" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/a-laughlin/a-laughlin.github.io" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/a-lucas/a-lucas.github.io" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/a-rank/avaandmed" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/a-richter/a-richter.github.io" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/a-trost/a-trost.github.io" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/a-v-k/astrid" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/a0/a0-webdrone-ruby" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/a0ivanov/aimp-control-plugin" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/a10networks/a10-horizon" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/a10networks/acos-client" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/a1124136985/a1124136985.github.io" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/a118326/a118326" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/a1251/a1251.github.com" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/a12map/a12-map" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/a16z/ai" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/a17levine/a17levine.github.io" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/a1ip/a1ip.github.io" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/a2/arex-7" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/apache/spark" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/apemix/apemix.github.io" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/apeng2012/apeng-kicad" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/apenwarr/afterquery" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/apigee/apigee-android-sdk" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/apigee/apigee-api-catalog-drupal" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/apigee/apigee-client-php" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/apigee/apigee-deploy-maven-plugin" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/apigee/apigee-devportal-kickstart-drupal" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/apigee/apigee-edge-drupal" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/apigee/apigee-ios-sdk" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/apigee/apigee-javascript-sdk" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/apigee/apigee-m10n-drupal" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/apostlez/algorithm-Exams" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/giganticode/bohr" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/giganticode/bohr-framework" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/repo-cache/junit-team/junit.contrib" vcs="Git" />
   </component>
 </project>
