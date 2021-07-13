@@ -62,7 +62,7 @@ def mine(job: Job, lock_path: Path):
                 result = tool.run_on_project(project, all_shas)
                 for sha, commit_result in result.items():
                     if sha not in commit_result:
-                        commit_result[sha] = {}
+                        commit_results[sha] = {}
                     commit_results[sha][tool_id] = commit_result
             except Exception as ex:
                 print(f"Exception: {type(ex).__name__}, {ex}, tool: {tool_id}, project: {project}")

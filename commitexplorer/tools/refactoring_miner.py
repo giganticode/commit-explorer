@@ -40,20 +40,24 @@ class RefactoringMiner(Tool):
             print(f'{type(self).__name__}: not a java project, skipping ...')
             return {}
         res = {}
-        for sha in (all_shas if len(all_shas) < 1000 else tqdm(all_shas)): #TODO if the project is too big, save earlier
-            commit_result = self._run_on_commit(Commit(project, sha), path)
-            if commit_result:
-                res[sha] = commit_result
+        # TODO log: n commits analyzed in m seconds
+        n_commits = len(all_shas)
+        commit_chunk = 1000
+        for i in tqdm(range(n_commits // commit_chunk + 1)):
+            start_commit = Commit(project, all_shas[i * commit_chunk])
+            end_commit = Commit(project, all_shas[min(n_commits - 1, i * commit_chunk + commit_chunk - 1)])
+            commit_result = self._run_on_commit_range(end_commit, start_commit, path)
+            res.update(commit_result)
         return res
 
-    def _run_on_commit(self, commit: Commit, path: Path) -> List: #TODO run on commit also for sstubs?
+    def _run_on_commit_range(self, start_commit: Commit, end_commit: Commit, path: Path) -> Dict[Sha, List]: #TODO run on commit also for sstubs?
         with tempfile.NamedTemporaryFile() as f:
-            cmd = ["./RefactoringMiner", "-c", str(path), commit.sha, '-json', f.name]
+            cmd = ["./RefactoringMiner", "-bc", str(path), start_commit.sha, end_commit.sha, '-json', f.name]
             subprocess.run(cmd, cwd=self.path, capture_output=True, check=True)
             commits: RefactoringMinerOutput = jsons.loads(f.read(), RefactoringMinerOutput)
-            return commits.commits[0].refactorings if commits.commits else []
+            return {c.sha1: c.refactorings for c in commits.commits if c.refactorings}
 
     def run_on_commit(self, commit: Commit) -> List:
         path = clone_github_project(commit.project, self.token)
-        self._run_on_commit(commit, path)
+        self._run_on_commit_range(commit, commit, path)
 
