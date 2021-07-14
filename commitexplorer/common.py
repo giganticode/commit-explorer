@@ -3,7 +3,7 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Optional, Dict, Tuple, Union, NewType, List
+from typing import Any, Optional, Dict, Tuple, Union, NewType, List, Generator
 
 import pygit2 as pygit2
 from git.objects import commit
@@ -87,7 +87,7 @@ class Tool(ABC):
     version: str
 
     @abstractmethod
-    def run_on_project(self, project: Project, all_shas: List[commit.Commit]) -> Dict[Sha, Any]:
+    def run_on_project(self, project: Project, all_shas: List[commit.Commit]) -> Generator[Dict[Sha, Any], None, None]:
         pass
 
     @abstractmethod

@@ -25,7 +25,7 @@ class SStubs(Tool):
         path, metadata = clone_github_project(project, self.token, return_metadata=True)
         if not Tool.is_java_project(metadata['langs']):
             print(f'{type(self).__name__}: not a java project, skipping ...')
-            return {} #TODO remove duplication
+            raise StopIteration() #TODO remove duplication
         with tempfile.TemporaryDirectory() as f:
             project_path = Path(f) / 'project'
             project_path.mkdir()
@@ -50,7 +50,7 @@ class SStubs(Tool):
                     if sha not in result:
                         result[sha] = {'sstubs': []}
                     result[sha]['sstubs'].append(sstub)
-        return result
+        yield result
 
     def run_on_commit(self, commit: Commit):
         raise NotImplemented()

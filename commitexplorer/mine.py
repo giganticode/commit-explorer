@@ -55,23 +55,18 @@ def mine(job: Job, lock_path: Path):
         all_commits = [commit for commit in git.Repo(path).iter_commits()]
         with open(lock_path, 'w') as f:
             f.write(f'{project}')
-        commit_results: Dict[Sha, Dict[str, Any]] = {}
         for tool_id, tool in tools:
             try:
-                # TODO save commits in batch - what does this mean? :)
-                result = tool.run_on_project(project, all_commits)
-                for sha, commit_result in result.items():
-                    if sha not in commit_result:
-                        commit_results[sha] = {}
-                    commit_results[sha][tool_id] = commit_result
+                for result_batch in tool.run_on_project(project, all_commits):
+                    commit_results: Dict[Sha, Dict[str, Any]] = {}
+                    for sha, commit_result in result_batch.items():
+                        if sha not in commit_result:
+                            commit_results[sha] = {}
+                        commit_results[sha][tool_id] = commit_result
+                    save_results(commit_results, project)
             except Exception as ex:
                 print(f"Exception: {type(ex).__name__}, {ex}, tool: {tool_id}, project: {project}")
                 traceback.print_tb(ex.__traceback__)
-        try:
-            save_results(commit_results, project)
-        except Exception as ex:
-            print(f"Exception: {type(ex).__name__}, {ex}, tool: commit: {project}")
-            traceback.print_tb(ex.__traceback__)
     lock_path.unlink()
 
 
