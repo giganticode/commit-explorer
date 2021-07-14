@@ -55,12 +55,11 @@ class RefactoringMiner(Tool):
         path, metadata = clone_github_project(project, self.token, return_metadata=True)
         if not Tool.is_java_project(metadata['langs']):
             print(f'{type(self).__name__}: not a java project, skipping ...')
-            raise StopIteration()
-        # TODO log: n commits analyzed in m seconds
-        commit_chunk = 1000
-        for older_commit, newer_commit in tqdm(commit_boundary_generator(all_shas_new_to_old, commit_chunk)):
-            commit_result = self._run_on_commit_range(older_commit, newer_commit, path)
-            yield commit_result
+        else:
+            commit_chunk = 1000
+            for older_commit, newer_commit in tqdm(commit_boundary_generator(all_shas_new_to_old, commit_chunk)):
+                commit_result = self._run_on_commit_range(older_commit, newer_commit, path)
+                yield commit_result
 
     def _run_on_commit_range(self, older_commit: commit.Commit, newer_commit: commit.Commit, path: Path) -> Dict[Sha, List]: #TODO run on commit also for sstubs?
         with tempfile.NamedTemporaryFile() as f:

@@ -12,9 +12,8 @@ def save_results(results: Dict[Sha, Dict[str, Any]], project: Project, rewrite_a
         except FileNotFoundError:
             dct = {}
         for tool_id, value in tool_result.items():
-            if tool_id in dct and not rewrite_allowed:
-                raise ValueError(f"Key {tool_id} already exists: {dct[tool_id]}")
-            dct[tool_id] = value
+            if tool_id not in dct or rewrite_allowed:
+                dct[tool_id] = value
         dct['owner'] = project.owner
         dct['repo'] = project.repo
         path = get_path_by_sha(sha, create=True)
