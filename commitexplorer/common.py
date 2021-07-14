@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Optional, Dict, Tuple, Union, NewType, List
 
 import pygit2 as pygit2
+from git.objects import commit
 from github import Github
 from github.GithubException import UnknownObjectException
 
@@ -86,7 +87,7 @@ class Tool(ABC):
     version: str
 
     @abstractmethod
-    def run_on_project(self, project: Project, all_shas: List[Sha]) -> Dict[Sha, Any]:
+    def run_on_project(self, project: Project, all_shas: List[commit.Commit]) -> Dict[Sha, Any]:
         pass
 
     @abstractmethod

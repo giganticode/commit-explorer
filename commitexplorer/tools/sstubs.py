@@ -5,6 +5,8 @@ import tempfile
 from pathlib import Path
 from typing import List, Dict, Any
 
+from git.objects import commit
+
 from commitexplorer import project_root
 from commitexplorer.common import PATH_TO_TOOLS, Tool, clone_github_project, Project, Sha, Commit
 
@@ -19,7 +21,7 @@ class SStubs(Tool):
         with open(project_root / 'github.token', 'r') as f:
             self.token = f.read().strip()
 
-    def run_on_project(self, project: Project, all_shas: List[Sha]) -> Dict[Sha, Dict[str, Any]]:
+    def run_on_project(self, project: Project, all_shas: List[commit.Commit]) -> Dict[Sha, Dict[str, Any]]:
         path, metadata = clone_github_project(project, self.token, return_metadata=True)
         if not Tool.is_java_project(metadata['langs']):
             print(f'{type(self).__name__}: not a java project, skipping ...')

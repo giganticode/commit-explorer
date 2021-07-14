@@ -52,14 +52,14 @@ def mine(job: Job, lock_path: Path):
         path = clone_github_project(project, token)
         if path is None:
             continue
-        all_shas = [Sha(commit.hexsha) for commit in git.Repo(path).iter_commits()]
+        all_commits = [commit for commit in git.Repo(path).iter_commits()]
         with open(lock_path, 'w') as f:
             f.write(f'{project}')
         commit_results: Dict[Sha, Dict[str, Any]] = {}
         for tool_id, tool in tools:
             try:
                 # TODO save commits in batch - what does this mean? :)
-                result = tool.run_on_project(project, all_shas)
+                result = tool.run_on_project(project, all_commits)
                 for sha, commit_result in result.items():
                     if sha not in commit_result:
                         commit_results[sha] = {}
