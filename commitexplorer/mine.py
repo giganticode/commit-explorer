@@ -53,8 +53,12 @@ def mine(job: Job, lock_path: Path):
         path = clone_github_project(project, token)
         if path is None:
             continue
+        repo = git.Repo(path)
+        if not repo.active_branch.is_valid():
+            print(f'Warning: repo at {path} has no commits.')
+            continue
         try:
-            all_commits = [commit for commit in git.Repo(path).iter_commits()]
+            all_commits = [commit for commit in repo.iter_commits()]
         except ValueError as ex:
             print(f'Warning: error {ex} has been raised. Removing repo at {path} and trying to clone it one more time.')
             shutil.rmtree(str(path), ignore_errors=True)
