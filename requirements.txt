@@ -10,6 +10,7 @@ GitPython==3.1.18
 idna==3.2
 jsons==1.4.2
 pycparser==2.20
+PyDriller==2.0
 pygit2==1.6.1
 PyGithub==1.55
 Pygments==2.9.0
