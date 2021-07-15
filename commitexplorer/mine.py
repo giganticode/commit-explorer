@@ -1,4 +1,5 @@
 import json
+import shutil
 import traceback
 from dataclasses import dataclass
 from pathlib import Path
@@ -55,8 +56,8 @@ def mine(job: Job, lock_path: Path):
         try:
             all_commits = [commit for commit in git.Repo(path).iter_commits()]
         except ValueError as ex:
-            print(f'Warning: error {ex} has been raised. Removing repo and trying to clone it one more time.')
-            path.rmdir()
+            print(f'Warning: error {ex} has been raised. Removing repo at {path} and trying to clone it one more time.')
+            shutil.rmtree(str(path), ignore_errors=True)
             path = clone_github_project(project, token)
             all_commits = [commit for commit in git.Repo(path).iter_commits()]
 
