@@ -50,35 +50,39 @@ def mine(job: Job, lock_path: Path):
     with open(project_root / 'github.token') as f:
         token = f.read().strip()
     for project in tqdm(job.projects):
-        path = clone_github_project(project, token)
-        if path is None:
-            continue
-        repo = git.Repo(path)
-        if not repo.active_branch.is_valid():
-            print(f'Warning: repo at {path} has no commits.')
-            continue
         try:
-            all_commits = [commit for commit in repo.iter_commits()]
-        except ValueError as ex:
-            print(f'Warning: error {ex} has been raised. Removing repo at {path} and trying to clone it one more time.')
-            shutil.rmtree(str(path), ignore_errors=True)
             path = clone_github_project(project, token)
-            all_commits = [commit for commit in git.Repo(path).iter_commits()]
-
-        with open(lock_path, 'w') as f:
-            f.write(f'{project}')
-        for tool_id, tool in tools:
+            if path is None:
+                continue
             try:
-                for result_batch in tool.run_on_project(project, all_commits):
-                    commit_results: Dict[Sha, Dict[str, Any]] = {}
-                    for sha, commit_result in result_batch.items():
-                        if sha not in commit_result:
-                            commit_results[sha] = {}
-                        commit_results[sha][tool_id] = commit_result
-                    save_results(commit_results, project)
-            except Exception as ex:
-                print(f"Exception: {type(ex).__name__}, {ex}, tool: {tool_id}, project: {project}")
-                traceback.print_tb(ex.__traceback__)
+                repo = git.Repo(path)
+                if not repo.active_branch.is_valid():
+                    print(f'Warning: repo at {path} has no commits.')
+                    continue
+                all_commits = [commit for commit in repo.iter_commits()]
+            except (ValueError, git.exc.InvalidGitRepositoryError) as ex:
+                print(f'Warning: error {ex} has been raised. Removing repo at {path} and trying to clone it one more time.')
+                shutil.rmtree(str(path), ignore_errors=True)
+                path = clone_github_project(project, token)
+                all_commits = [commit for commit in git.Repo(path).iter_commits()]
+
+            with open(lock_path, 'w') as f:
+                f.write(f'{project}')
+            for tool_id, tool in tools:
+                try:
+                    for result_batch in tool.run_on_project(project, all_commits):
+                        commit_results: Dict[Sha, Dict[str, Any]] = {}
+                        for sha, commit_result in result_batch.items():
+                            if sha not in commit_result:
+                                commit_results[sha] = {}
+                            commit_results[sha][tool_id] = commit_result
+                        save_results(commit_results, project)
+                except Exception as ex:
+                    print(f"Exception: {type(ex).__name__}, {ex}, skipping tool: {tool_id}  (project: {project})")
+                    traceback.print_tb(ex.__traceback__)
+        except Exception as ex:
+            print(f"Exception: {type(ex).__name__}, {ex}, skipping project: {project}")
+            traceback.print_tb(ex.__traceback__)
     lock_path.unlink()
 
 
