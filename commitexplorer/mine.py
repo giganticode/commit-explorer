@@ -52,7 +52,14 @@ def mine(job: Job, lock_path: Path):
         path = clone_github_project(project, token)
         if path is None:
             continue
-        all_commits = [commit for commit in git.Repo(path).iter_commits()]
+        try:
+            all_commits = [commit for commit in git.Repo(path).iter_commits()]
+        except ValueError as ex:
+            print(f'Warning: error {ex} has been raised. Removing repo and trying to clone it one more time.')
+            path.rmdir()
+            path = clone_github_project(project, token)
+            all_commits = [commit for commit in git.Repo(path).iter_commits()]
+
         with open(lock_path, 'w') as f:
             f.write(f'{project}')
         for tool_id, tool in tools:
