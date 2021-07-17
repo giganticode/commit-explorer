@@ -1,6 +1,8 @@
 import json
 from pprint import pprint
 
+from tqdm import tqdm
+
 from commitexplorer.common import PATH_TO_STORAGE
 
 
@@ -12,7 +14,7 @@ def print_stats():
         "refactoring": {"present": 0, "processed": 0},
         "sstubs": {"present": 0, "processed": 0},
     }
-    for i in range(256):
+    for i in tqdm(range(256)):
         for j in range(256):
             first_dir = format(i, 'x')
             second_dir = format(j, 'x')
