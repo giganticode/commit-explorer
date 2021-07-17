@@ -20,7 +20,9 @@ def get_random_commit(with_key: str) -> Optional[Tuple[str, Dict]]:
             with file.open() as f:
                 js = json.load(f)
                 if with_key in js and js[with_key]:
-                    return first_dir + second_dir + file.name, js
+                    sha = first_dir + second_dir + file.name
+                    url = f'https://github.com/{js["owner"]}/{js["repo"]}/commit/{sha}'
+                    return url, js
     return None
 
 
