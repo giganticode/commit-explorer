@@ -57,7 +57,7 @@ class RefactoringMiner(Tool):
         if not Tool.is_java_project(metadata['langs']):
             print(f'{type(self).__name__}: not a java project, skipping ...')
         else:
-            commit_chunk = 1000
+            commit_chunk = 100
             max_seconds_per_commit = 6
             for older_commit, newer_commit in tqdm(commit_boundary_generator(all_shas_new_to_old, commit_chunk)):
                 commit_result = self._run_on_commit_range(older_commit, newer_commit, path, commit_chunk * max_seconds_per_commit)
