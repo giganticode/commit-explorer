@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
@@ -117,6 +118,12 @@ class Tool(ABC):
             return 0.0
 
 
-PATH_TO_STORAGE = project_root / 'storage'
-PATH_TO_TOOLS = project_root / 'software'
-PATH_TO_REPO_CACHE = project_root / 'repo-cache'
+try:
+    commit_explorer_data_path = Path(os.environ['COMMIT_EXPLORER_DATA_PATH'])
+except KeyError:
+    print(f"Warning: COMMIT_EXPLORER_DATA_PATH env variable not set -- using the project root: {project_root}.")
+    commit_explorer_data_path = project_root
+
+PATH_TO_STORAGE = commit_explorer_data_path / 'storage'
+PATH_TO_TOOLS = commit_explorer_data_path / 'software'
+PATH_TO_REPO_CACHE = commit_explorer_data_path / 'repo-cache'
