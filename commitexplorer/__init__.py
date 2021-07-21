@@ -1,8 +1,8 @@
 import logging
-import os
 
 from pathlib import Path
 
+import pkg_resources
 from rich.logging import RichHandler
 
 FORMAT = "%(message)s"
@@ -20,16 +20,7 @@ project_root = commit_explorer_root.parent
 
 
 def version() -> str:
-    with open(os.path.join(commit_explorer_root, "VERSION")) as version_file:
-        return version_file.read().strip()
-
-
-def appauthor() -> str:
-    return "giganticode"
-
-
-def appname() -> str:
-    return "commit-explorer"
+    return pkg_resources.get_distribution('commit-explorer').version
 
 
 __version__ = version()
