@@ -118,12 +118,15 @@ class Tool(ABC):
             return 0.0
 
 
+PATH_TO_TOOLS = project_root / 'software'
 try:
-    commit_explorer_data_path = Path(os.environ['COMMIT_EXPLORER_DATA_PATH'])
+    PATH_TO_STORAGE = Path(os.environ['COMMIT_EXPLORER_STORAGE'])
 except KeyError:
-    print(f"Warning: COMMIT_EXPLORER_DATA_PATH env variable not set -- using the project root: {project_root}.")
-    commit_explorer_data_path = project_root
+    PATH_TO_STORAGE = project_root / 'storage'
+    print(f"Warning: COMMIT_EXPLORER_STORAGE env variable not set -- using : {PATH_TO_STORAGE}.")
 
-PATH_TO_STORAGE = commit_explorer_data_path / 'storage'
-PATH_TO_TOOLS = commit_explorer_data_path / 'software'
-PATH_TO_REPO_CACHE = commit_explorer_data_path / 'repo-cache'
+try:
+    PATH_TO_REPO_CACHE = Path(os.environ['COMMIT_EXPLORER_REPO_CACHE'])
+except KeyError:
+    PATH_TO_REPO_CACHE = project_root / 'repo-cache'
+    print(f"Warning: COMMIT_EXPLORER_REPO_CACHE env variable not set -- using: {PATH_TO_REPO_CACHE}.")
