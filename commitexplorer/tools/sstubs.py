@@ -11,10 +11,6 @@ from commitexplorer import project_root
 from commitexplorer.common import PATH_TO_TOOLS, Tool, clone_github_project, Project, Sha, Commit
 
 
-def get_full_github_url(author: str, repo: str) -> str:
-    return f"https://github.com/{author}/{repo}"
-
-
 class SStubs(Tool):
     def __init__(self, version: str):
         self.path = PATH_TO_TOOLS / type(self).__name__ / version

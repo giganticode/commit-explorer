@@ -26,10 +26,6 @@ class RefactoringMinerOutput:
     commits: List[RefactoringMinerCommit] = field(default_factory=list)
 
 
-def get_full_github_url(author: str, repo: str) -> str:
-    return f"https://github.com/{author}/{repo}"
-
-
 def commit_boundary_generator(lst: List, chunk_size) -> Generator[Tuple[Any, Any], None, None]:
     """
     >>> [(older, newer) for older, newer in commit_boundary_generator([1, 2, 3, 4], 2)]
