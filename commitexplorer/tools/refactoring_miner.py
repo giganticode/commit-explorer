@@ -43,11 +43,6 @@ def commit_boundary_generator(lst: List, chunk_size) -> Generator[Tuple[Any, Any
 
 
 class RefactoringMiner(Tool):
-    def __init__(self, version: str):
-        self.path = PATH_TO_TOOLS / type(self).__name__ / version / "bin"
-        with open(project_root / 'github.token', 'r') as f:
-            self.token = f.read().strip()
-
     def run_on_project(self, project: Project, all_shas_new_to_old: List[commit.Commit]) -> Generator[Dict[Sha, List], None, None]:
         path, metadata = clone_github_project(project, self.token, return_metadata=True)
         if not Tool.is_java_project(metadata['langs']):

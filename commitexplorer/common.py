@@ -84,8 +84,14 @@ def clone_github_project(project: Project, token: Optional[str] = None, return_m
     return (path_to_repo, metadata) if return_metadata else path_to_repo
 
 
+@dataclass
 class Tool(ABC):
     version: str
+
+    def __post_init__(self):
+        with open(project_root / 'github.token', 'r') as f:
+            self.token = f.read().strip()
+        self.path = PATH_TO_TOOLS / type(self).__name__ / self.version / "bin"
 
     @abstractmethod
     def run_on_project(self, project: Project, all_shas: List[commit.Commit]) -> Generator[Dict[Sha, Any], None, None]:
