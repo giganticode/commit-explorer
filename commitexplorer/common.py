@@ -1,13 +1,14 @@
 import json
 import logging
 import os
+import shutil
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional, Dict, Tuple, Union, NewType, List, Generator
 
-import pygit2 as pygit2
-from git.objects import commit
+import github.Repository as githubrepo
+from pygit2 import clone_repository, Repository, GitError
 from github import Github
 from github.GithubException import UnknownObjectException
 
@@ -45,7 +46,25 @@ def path_exists_and_not_empty(path: Path) -> bool:
     return path.exists() and any(path.iterdir())
 
 
-def clone_github_project(project: Project, token: Optional[str] = None, return_metadata: Optional[bool] = False) -> Optional[Union[Path, Tuple[Path, Dict[str, Any]]]]:
+def path_to_working_dir(repo: Repository) -> Path:
+    if not repo.path.endswith('.git/'):
+        raise AssertionError(f'Repo path should end with .git but is: {repo.path}')
+    return Path(repo.path).parent
+
+
+def load_metadata(path_to_metadata: Path, remote_repo: githubrepo.Repository):
+    if not path_to_metadata.exists():
+        metadata = {'langs': remote_repo.get_languages()}
+
+        with path_to_metadata.open('w') as f:
+            json.dump(metadata, f)
+    else:
+        with path_to_metadata.open() as f:
+            metadata = json.load(f)
+    return metadata
+
+
+def clone_github_project(project: Project, token: Optional[str] = None, return_metadata: Optional[bool] = False) -> Optional[Union[Repository, Tuple[Repository, Dict[str, Any]]]]:
     path_to_repo: Path = PATH_TO_REPO_CACHE / project.owner / project.repo
     path_to_metadata: Path = Path(str(path_to_repo) + ".metadata")
 
@@ -57,31 +76,29 @@ def clone_github_project(project: Project, token: Optional[str] = None, return_m
             print(f"Project {project} and metadata already exist in project cache.")
             with path_to_metadata.open() as f:
                 metadata = json.load(f)
-            return (path_to_repo, metadata) if return_metadata else path_to_repo
+            try:
+                repo = Repository(path_to_repo)
+            except GitError as ex:
+                print(f'Warning: error {ex} has been raised. Removing repo at {path_to_repo} and trying to clone it one more time.')
+                shutil.rmtree(str(path_to_repo), ignore_errors=True)
+                repo = clone_github_project(project, token)
+            return (repo, metadata) if return_metadata else repo
 
     github = Github(token)
     if not path_to_repo.exists():
         path_to_repo.mkdir(parents=True)
     try:
-        repo = github.get_repo(f'{project}')
+        remote_repo = github.get_repo(f'{project}')
     except UnknownObjectException:
         print(f'Project {project} not found. Was it removed?')
         (path_to_repo / "NOT_FOUND").touch()
         return (None, None) if return_metadata else None
     if not any(path_to_repo.iterdir()):
         print(f"Cloning {project} from GitHub...")
-        pygit2.clone_repository(repo.git_url, str(path_to_repo))
+        repo = clone_repository(remote_repo.git_url, str(path_to_repo))
+    metadata = load_metadata(path_to_metadata, remote_repo)
 
-    if not path_to_metadata.exists():
-        metadata = {'langs': repo.get_languages()}
-
-        with path_to_metadata.open('w') as f:
-            json.dump(metadata, f)
-    else:
-        with path_to_metadata.open() as f:
-            metadata = json.load(f)
-
-    return (path_to_repo, metadata) if return_metadata else path_to_repo
+    return (repo, metadata) if return_metadata else repo
 
 
 @dataclass
@@ -94,7 +111,7 @@ class Tool(ABC):
         self.path = PATH_TO_TOOLS / type(self).__name__ / self.version / "bin"
 
     @abstractmethod
-    def run_on_project(self, project: Project, all_shas: List[commit.Commit]) -> Generator[Dict[Sha, Any], None, None]:
+    def run_on_project(self, project: Project, all_shas: List[Commit]) -> Generator[Dict[Sha, Any], None, None]:
         pass
 
     @abstractmethod
