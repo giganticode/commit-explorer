@@ -42,13 +42,13 @@ mv RefactoringMiner/"$unzipped" RefactoringMiner/"$VERSION"
 
 echo "=====================>   GumTree"
 
-rm -rf gumtree
+rm -rf GumTree
 curl -L https://github.com/GumTreeDiff/gumtree/releases/download/v3.0.0-beta2/gumtree-3.0.0-beta2.zip --output gumtree-3.0.0-beta2.zip
 unzip gumtree-3.0.0-beta2.zip
 rm -rf gumtree-3.0.0-beta2.zip
-mkdir gumtree
-mv gumtree-3.0.0-beta2 gumtree
-mv gumtree/gumtree-3.0.0-beta2 gumtree/3.0.0-beta2
+mkdir GumTree
+mv gumtree-3.0.0-beta2 GumTree
+mv GumTree/gumtree-3.0.0-beta2 GumTree/3.0.0-beta2
 
 echo "=====================>   PythonParser"
 
