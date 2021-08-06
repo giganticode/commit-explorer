@@ -33,7 +33,7 @@ class Job:
         else:
             projects = all_projects
         if projects is None:
-            raise AssertionError()
+            raise AssertionError("No projects found, check job.json or job.lock files.")
         return cls(config['tools'], projects)
 
 
