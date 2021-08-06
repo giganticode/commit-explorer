@@ -36,6 +36,7 @@ class ExternalProcessError(Exception):
 class ToolNotInstalledError(Exception):
     pass
 
+
 class GumTree(Tool):
     @staticmethod
     def parse_output(cmd, stdout: str, stderr: str, file: str) -> Optional[List[Dict]]:
@@ -87,7 +88,7 @@ class GumTree(Tool):
         try:
             python_parser_path = str(PATH_TO_TOOLS / 'pythonparser')
             my_env = {**os.environ, 'PATH': python_parser_path + os.pathsep + os.environ['PATH']}
-            completed_process = subprocess.run(cmd, cwd=self.path, capture_output=True, check=True, timeout=timeout, env=my_env)
+            completed_process = subprocess.run(cmd, cwd=str(self.path), capture_output=True, check=True, timeout=timeout, env=my_env)
             output = completed_process.stdout.decode('utf-8')
             error_text = completed_process.stderr.decode('utf-8')
             result = self.parse_output(cmd, output, error_text, new_file)
