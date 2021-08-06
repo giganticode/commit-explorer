@@ -24,6 +24,8 @@ if ! [ -d "$tools_dir" ]; then
 fi
 cd "$tools_dir"
 
+echo "=====================>   RefactoringMiner"
+
 rm -rf RefactoringMiner
 git clone https://github.com/tsantalis/RefactoringMiner
 cd RefactoringMiner
@@ -37,3 +39,20 @@ unzipped=$(ls | grep -e "^RefactoringMiner-\([[:digit:]]\.[[:digit:]]\.[[:digit:
 VERSION=$(echo "$unzipped" | sed -n 's/RefactoringMiner-\([[:digit:]]\.[[:digit:]]\.[[:digit:]]\)/\1/p')
 mv "$unzipped" RefactoringMiner
 mv RefactoringMiner/"$unzipped" RefactoringMiner/"$VERSION"
+
+echo "=====================>   GumTree"
+
+rm -rf gumtree
+curl -L https://github.com/GumTreeDiff/gumtree/releases/download/v3.0.0-beta2/gumtree-3.0.0-beta2.zip --output gumtree-3.0.0-beta2.zip
+unzip gumtree-3.0.0-beta2.zip
+rm -rf gumtree-3.0.0-beta2.zip
+mkdir gumtree
+mv gumtree-3.0.0-beta2 gumtree
+mv gumtree/gumtree-3.0.0-beta2 gumtree/3.0.0-beta2
+
+echo "=====================>   PythonParser"
+
+rm -rf pythonparser
+git clone https://github.com/GumTreeDiff/pythonparser.git
+pip install -r pythonparser/requirements.txt
+[[ ":$PATH:" != *":${PWD}/pythonparser:"* ]] && export PATH="${PWD}/pythonparser:${PATH}"
