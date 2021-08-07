@@ -2,6 +2,7 @@ from types import SimpleNamespace
 from typing import Any, Dict
 
 import pymongo as pymongo
+from pymongo.errors import WriteError, DocumentTooLarge
 
 from commitexplorer.common import Project, Sha
 
@@ -26,7 +27,13 @@ def save_results(results: Dict[Sha, Dict[str, Any]], project: Project, db) -> No
     """
     for sha, tool_result in results.items():
         for tool_id, value in tool_result.items():
-            db.commits.update_one({'_id': sha}, {
-                '$setOnInsert': {'_id': sha, 'owner': project.owner, 'repo': project.repo},
-                '$set': {tool_id: value}
-            }, upsert=True)
+            try:
+                db.commits.update_one({'_id': sha}, {
+                    '$setOnInsert': {'_id': sha, 'owner': project.owner, 'repo': project.repo},
+                    '$set': {tool_id: value}
+                }, upsert=True)
+            except (WriteError, DocumentTooLarge):
+                db.commits.update_one({'_id': sha}, {
+                    '$setOnInsert': {'_id': sha, 'owner': project.owner, 'repo': project.repo},
+                    '$set': {tool_id: {'status': 'value-too-large'}}
+                }, upsert=True)
