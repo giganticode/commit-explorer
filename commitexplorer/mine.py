@@ -5,11 +5,12 @@ from pathlib import Path
 from typing import List, Dict, Any, Generator
 
 from pygit2 import Repository, Commit
+from pymongo import MongoClient
 from tqdm import tqdm
 
 from commitexplorer import project_root
 from commitexplorer.common import Tool, clone_github_project, Sha, Project
-from commitexplorer.save import save_results
+from commitexplorer.db import save_results
 from commitexplorer.tools import tool_id_map
 
 
@@ -68,7 +69,7 @@ def run_tools_on_project(tools: List[Tool], project: Project, repo: Repository) 
             traceback.print_tb(ex.__traceback__)
 
 
-def mine(job: Job, lock_path: Path):
+def mine(job: Job, lock_path: Path, database):
     tools = [(tool_id, get_tool_by_id(tool_id)) for tool_id in job.tools]
     with open(project_root / 'github.token') as f:
         token = f.read().strip()
@@ -79,7 +80,7 @@ def mine(job: Job, lock_path: Path):
             repo = clone_github_project(project, token)
             if repo is not None:
                 for result_batch in run_tools_on_project(tools, project, repo):
-                    save_results(result_batch, project)
+                    save_results(result_batch, project, database)
         except Exception as ex:
             print(f"Exception: {type(ex).__name__}, {ex}, skipping project: {project}")
             traceback.print_tb(ex.__traceback__)
@@ -90,4 +91,4 @@ if __name__ == '__main__':
     job_config = project_root / 'job.json'
     job_lock = job_config.with_suffix('.lock')
     job = Job.load_from_file(job_config, job_lock)
-    mine(job, job_lock)
+    mine(job, job_lock, MongoClient('mongodb://localhost:27017')['commit_explorer_test'])

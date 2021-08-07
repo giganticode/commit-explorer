@@ -1,0 +1,8 @@
+[DEFAULT]
+mongodb_uri = mongodb://localhost:27017
+
+[prod]
+mongodb_database_name = commit_explorer
+
+[dev]
+mongodb_database_name = commit_explorer_test
