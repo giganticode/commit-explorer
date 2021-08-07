@@ -15,7 +15,7 @@ def remove_large_values(dct: Dict) -> Dict:
     for key, value in dct.items():
         if len(json.dumps(value).encode('utf-8')) > 1024 * 1024 * 10:
             print(f'Omiting {key}')
-            res[key]['status'] = 'value-too-large'
+            res[key] = {'status': 'value-too-large'}
         else:
             res[key] = value
     return res
