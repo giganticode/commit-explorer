@@ -16,5 +16,8 @@ for dirpath, dirnames, filenames in os.walk(storage_path):
             if len(sha) != 40:
                 raise AssertionError(sha)
             db.commits.insert_one({'_is': sha, **dct})
+    if len(filenames) == 0:
+        print(f'Processing {dirpath}')
+        print(f'Commits in the db: {db.commits.count()}')
 
 
