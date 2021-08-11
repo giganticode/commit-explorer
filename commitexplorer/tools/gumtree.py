@@ -111,24 +111,27 @@ class GumTree(Tool):
                     old_repo.reset(previous_commit.oid, GIT_RESET_HARD)
                 else:
                     shutil.rmtree(old_repo_path)
-                dct = {}
+                files = []
                 for patch in commit.tree.diff_to_tree(previous_commit.tree):
                     delta = patch.delta
+                    dct = {'file': delta.new_file.path}
                     try:
                         result = self.run_on_file(old_repo_path, new_repo_path, delta.old_file.path, delta.new_file.path)
-                        dct[delta.new_file.path] = result
+                        dct['result'] = result
+                        dct['status'] = 'ok'
                     except NoGeneratorFound:
-                        dct[delta.new_file.path] = {'status': 'error-no-generator-found'}
+                        dct['status'] = 'error-no-generator-found'
                     except ExternalProcessError:
-                        dct[delta.new_file.path] = {'status': 'external-process-error'}
+                        dct['status'] = 'external-process-error'
                     except ToolNotInstalledError:
-                        dct[delta.new_file.path] = {'status': 'tool-not-installed-error'}
+                        dct['status'] = 'tool-not-installed-error'
                     except OtherError:
-                        dct[delta.new_file.path] = {'status': 'other-error'}
+                        dct['status'] = 'other-error'
                     except UnknownError:
-                        dct[delta.new_file.path] = {'status': 'unknown-error'}
+                        dct['status'] = 'unknown-error'
+                    files.append(dct)
 
-                yield {commit.hex: dct}
+                yield {commit.hex: files}
 
     def run_on_commit(self, commit: Commit) -> List:
         raise NotImplemented()

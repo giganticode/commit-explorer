@@ -35,13 +35,6 @@ class Commit:
     sha: Sha
 
 
-def get_path_by_sha(sha: str, create: bool = False) -> Path:
-    path = PATH_TO_STORAGE / sha[:2] / sha[2:4] / sha[4:]
-    if create and not path.parent.exists():
-        path.parent.mkdir(parents=True)
-    return path
-
-
 def path_exists_and_not_empty(path: Path) -> bool:
     return path.exists() and any(path.iterdir())
 
@@ -93,7 +86,8 @@ def clone_github_project(project: Project, token: Optional[str] = None, return_m
         print(f'Project {project} not found. Was it removed?')
         (path_to_repo / "NOT_FOUND").touch()
         return (None, None) if return_metadata else None
-    if not any(path_to_repo.iterdir()):
+    path_to_repo_empty = not any(path_to_repo.iterdir())
+    if path_to_repo_empty:
         print(f"Cloning {project} from GitHub...")
         repo = clone_repository(remote_repo.git_url, str(path_to_repo))
     metadata = load_metadata(path_to_metadata, remote_repo)

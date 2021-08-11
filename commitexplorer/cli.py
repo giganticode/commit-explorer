@@ -56,5 +56,5 @@ def show(sha: str) -> None:
 def mine() -> None:
     job_config = project_root / 'job.json'
     job_lock = job_config.with_suffix('.lock')
-    job = m.Job.load_from_file(job_config, job_lock)
+    job = m.JobList.load_from_file(job_config, job_lock)
     m.mine(job, job_lock, db)
