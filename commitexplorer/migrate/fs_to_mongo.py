@@ -32,19 +32,21 @@ def validate_and_fix_tool_ids(commit_document: Dict) -> Dict:
         'mine_sstubs/head': 'mine_sstubs/head',
         'refactoring_miner/2.1.0': 'refactoring_miner/2_1_0',
         'special_commit_finder/0.1': 'special_commit_finder/0_1',
-        'gumtree/3.0.0-beta2': 'gumtree/3_0_0-beta2'
+        'gumtree/3.0.0-beta2': 'gumtree/3_0_0-beta2',
+        '_id': '_id',
+        'owner': 'owner',
+        'repo': 'repo'
     }
-    new_tools = {}
-    for key in commit_document['tools'].keys():
+    new_doc = {}
+    for key in commit_document.keys():
         if key not in keys_tranformation:
             raise ValueError(f'Unknown key: {key}')
 
     for key, new_key in keys_tranformation.items():
-        if key in commit_document['tools']:
-            new_tools[new_key] = commit_document['tools'][key]
+        if key in commit_document:
+            new_doc[new_key] = commit_document[key]
 
-    commit_document['tools'] = new_tools
-    return commit_document
+    return new_doc
 
 
 def check_no_dots_and_dollars_in_keys(dct: Dict) -> None:
@@ -87,8 +89,11 @@ def save_commits_from_fs_to_db(database):
                 dct = validate_and_fix_tool_ids(dct)
                 check_no_dots_and_dollars_in_keys(dct)
                 dct = remove_large_values(dct)
-                database.commits.insert_one({'_id': sha, **dct})
-
+#                print({'_id': sha, **dct})
+                try:  
+                    database.commits.insert_one({'_id': sha, **dct})
+                except Exception as ex:
+                    print(f"Exception: {type(ex).__name__}, {ex}, sha: {sha}")
         if len(filenames) == 0:
             print(f'Processing {dirpath}')
             print(f'Commits in the db: {database.commits.estimated_document_count()}')
