@@ -9,6 +9,7 @@ result = client['commit_explorer']['commits'].find({'gumtree/3_0_0-beta2': {
 }})
 
 for commit in tqdm(result):
-    lst = [{"file": key, **value} for key, value in  commit["gumtree/3_0_0-beta2"].items()]
-    commit["gumtree/3_0_0-beta2"] = lst
-    client['commit_explorer']['commits'].replace_one({'_id': commit['_id']}, commit)
+    if isinstance(commit["gumtree/3_0_0-beta2"], dict):
+        lst = [{"file": key, **value} for key, value in  commit["gumtree/3_0_0-beta2"].items()]
+        commit["gumtree/3_0_0-beta2"] = lst
+        client['commit_explorer']['commits'].replace_one({'_id': commit['_id']}, commit)
