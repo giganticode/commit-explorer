@@ -99,8 +99,10 @@ def save_commits_from_fs_to_db(database):
                     to_insert = {'_id': sha, **dct}
                     from_db = database.commits.find_one({'_id': sha})
                     if from_db is None:
+                        print(f"looked up for commit {sha} in the database, result: {from_db}")
                         database.commits.insert_one(to_insert)
-                        print("Inserting")
+                        print(f"Inserting {to_insert}")
+                        print()
                     else:
                         update_needed = False
                         for key, value in to_insert.items():
