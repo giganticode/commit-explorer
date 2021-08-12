@@ -106,6 +106,7 @@ def save_commits_from_fs_to_db(database):
                         for key, value in to_insert.items():
                             if key not in from_db:
                                 from_db[key] = value
+                                print(f"New key: {key}")
                                 update_needed = True
                         if update_needed:
                             database.commits.replace_one({'_id': sha}, from_db)
