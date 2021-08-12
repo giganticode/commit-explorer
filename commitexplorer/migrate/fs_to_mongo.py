@@ -1,5 +1,6 @@
 import json
 import os
+from json.decoder import JSONDecodeError
 from pathlib import Path
 from typing import Dict, List
 
@@ -81,7 +82,12 @@ def save_commits_from_fs_to_db(database):
         for file in filenames:
             path = Path(dirpath) / file
             with path.open() as f:
-                dct = json.loads(f.read())
+                try:
+                    dct = json.loads(f.read())
+                except JSONDecodeError:
+                    print(f"File {path} is corrupted. Skipping")
+                    continue
+
                 sha = str(path.parent.parent.name) + str(path.parent.name) + str(path.name)
                 if len(sha) != 40:
                     raise AssertionError(sha)
@@ -89,9 +95,22 @@ def save_commits_from_fs_to_db(database):
                 dct = validate_and_fix_tool_ids(dct)
                 check_no_dots_and_dollars_in_keys(dct)
                 dct = remove_large_values(dct)
-#                print({'_id': sha, **dct})
-                try:  
-                    database.commits.insert_one({'_id': sha, **dct})
+                try:
+                    to_insert = {'_id': sha, **dct}
+                    from_db = database.commits.find_one({'_id': sha})
+                    if from_db is None:
+                        database.commits.insert_one(to_insert)
+                        print("Inserting")
+                    else:
+                        update_needed = False
+                        for key, value in to_insert.items():
+                            if key not in from_db:
+                                from_db[key] = value
+                                update_needed = True
+                        if update_needed:
+                            database.commits.replace_one({'_id': sha}, from_db)
+                            print(f"Updated: {sha}")
+
                 except Exception as ex:
                     print(f"Exception: {type(ex).__name__}, {ex}, sha: {sha}")
         if len(filenames) == 0:
