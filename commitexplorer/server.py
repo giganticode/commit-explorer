@@ -18,8 +18,8 @@ class MyHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
         super().__init__(request, client_address, server)
 
     def do_GET(self):
-        if self.path.startswith('/ce/'):
-            sha = self.path[4:]
+        if self.path.startswith('/ce/commit/'):
+            sha = self.path[11:]
             if not sha_regex.fullmatch(sha):
                 return self.send_error(400, f'Invalid commit hashsum: {sha}')
             commit = commit_collection.find_one({'_id': sha})
@@ -30,7 +30,12 @@ class MyHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
                 self.wfile.write(commit)
             else:
                 return self.send_error(404, f"Commit {sha} not found")
-
+        if self.path.startswith('/ce/query/'):
+            ids = [sha['_id'] for sha in commit_collection.find({'bohr.200k_commits': {"$exists": True}}, {"_id": 1})]
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(ids)
         else:
             return http.server.SimpleHTTPRequestHandler.do_GET(self)
 
