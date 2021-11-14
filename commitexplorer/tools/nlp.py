@@ -2,11 +2,11 @@ import re
 from abc import abstractmethod
 from collections import Counter
 from dataclasses import dataclass, field
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 
+import jsons
 import spacy
 from spacy.tokens import Token
-
 
 ISSUE_REGEX = '(([A-Z]+\-)?[0-9]+)'
 URL_REGEX = "((http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-]))( )?"
@@ -50,7 +50,7 @@ class ParsedCommitMessageSentence:
         return str(self)
 
 
-@dataclass
+@dataclass(frozen=True)
 class NounVerbSentence(ParsedCommitMessageSentence):
     subject: str
     verb: str
@@ -64,7 +64,7 @@ class NounVerbSentence(ParsedCommitMessageSentence):
         return cls(get_lemma(subject), get_lemma(verb), get_lemma(aux))
 
 
-@dataclass
+@dataclass(frozen=True)
 class NounPhrase(ParsedCommitMessageSentence):
     noun: str
     mod: Optional[str]
@@ -77,7 +77,7 @@ class NounPhrase(ParsedCommitMessageSentence):
         return f'{self.noun} ({self.mod})'
 
 
-@dataclass
+@dataclass(frozen=True)
 class VerbPhrase(ParsedCommitMessageSentence):
     verb: str
     object: str
@@ -90,7 +90,7 @@ class VerbPhrase(ParsedCommitMessageSentence):
         return f'{self.verb} {self.object}'
 
 
-@dataclass
+@dataclass(frozen=True)
 class GenericVerbPhrase(ParsedCommitMessageSentence):
     verb: str
     other: str
@@ -103,7 +103,7 @@ class GenericVerbPhrase(ParsedCommitMessageSentence):
         return f'{self.verb} + {self.other}'
 
 
-@dataclass
+@dataclass(frozen=True)
 class ParsedCommitMessage:
     sentences: List[ParsedCommitMessageSentence]
     clean_message: str

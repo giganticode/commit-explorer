@@ -1,6 +1,6 @@
 from commitexplorer.tools.gumtree import GumTree
 from commitexplorer.tools.refactoring_miner import RefactoringMiner
-from commitexplorer.tools.spacy import SpacyRunner
+from commitexplorer.tools.spacyrunner import SpacyRunner
 from commitexplorer.tools.special_commit_finder import SpecialCommitFinder
 from commitexplorer.tools.sstubs import SStubs
 
