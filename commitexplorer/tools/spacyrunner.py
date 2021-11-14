@@ -15,7 +15,7 @@ class SpacyRunner(Tool):
 
         repo = clone_github_project(project)
         working_dir = str(path_to_working_dir(repo))
-        yield {commit.hash: {'spacy_0_1': jsons.dump(get_commit_cores(commit.msg, nlp))} for commit in Repository(working_dir).traverse_commits()}
+        yield {commit.hash: jsons.dump(get_commit_cores(commit.msg, nlp)) for commit in Repository(working_dir).traverse_commits()}
 
     def run_on_commit(self, commit: Commit):
         raise NotImplemented()
