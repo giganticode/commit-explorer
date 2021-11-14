@@ -1,5 +1,6 @@
 from typing import List, Generator, Dict, Any
 
+import jsons
 from pydriller import Repository
 
 from commitexplorer.common import Tool, Commit, Project, Sha, clone_github_project, path_to_working_dir
@@ -14,7 +15,7 @@ class SpacyRunner(Tool):
 
         repo = clone_github_project(project)
         working_dir = str(path_to_working_dir(repo))
-        yield {commit.hash: {'spacy_0_1': get_commit_cores(commit.msg, nlp)} for commit in Repository(working_dir).traverse_commits()}
+        yield {commit.hash: {'spacy_0_1': jsons.dump(get_commit_cores(commit.msg, nlp))} for commit in Repository(working_dir).traverse_commits()}
 
     def run_on_commit(self, commit: Commit):
         raise NotImplemented()
