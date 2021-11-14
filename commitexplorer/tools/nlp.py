@@ -109,7 +109,7 @@ class ParsedCommitMessage:
     clean_message: str
     bag_of_words: Dict[str, int]
     issue: Optional[str] = None
-    url: [List[str]] = field(default_factory=list)
+    url: List[str] = field(default_factory=list)
 
     def __str__(self):
         return str(self.sentences) + " " + str(self.bag_of_words) + f" [{self.issue}, {self.url}]"
