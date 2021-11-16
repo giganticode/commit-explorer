@@ -52,7 +52,8 @@ class JobList:
 
 
 def get_tool_by_id(id: str) -> Tool:
-    tool_id, version = id.split('/')
+    id_parts = id.split('/')
+    tool_id, version = id_parts if len(id_parts) == 2 else id_parts, None
     if tool_id not in tool_id_map:
         raise ValueError(f'Unknown tool: {tool_id}. Check job.json file')
     tool_class = tool_id_map[tool_id]
