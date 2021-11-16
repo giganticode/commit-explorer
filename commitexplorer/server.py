@@ -11,6 +11,7 @@ sha_regex=re.compile('[0-9a-f]{40}')
 
 client = MongoClient('mongodb://localhost:27017')
 commit_collection = client['commit_explorer']['commits']
+issue_collection = client['commit_explorer']['issues']
 
 
 class MyHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
@@ -25,25 +26,35 @@ class MyHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(payload_bytes)
 
     def handle_commit(self):
-        sha = self.path[11:]
+        sha = self.path[len('/ce/commit/'):]
         if not sha_regex.fullmatch(sha):
             return self.send_error(400, f'Invalid commit hashsum: {sha}')
         commit = commit_collection.find_one({'_id': sha})
-        if commit is not None:
-            self.send200(commit)
-        else:
+        if commit is None:
             return self.send_error(404, f"Commit {sha} not found")
+        try:
+            issue_ids = commit['links']['bohr']['issues']
+            issues = [issue_collection.find_one({'_id': issue_id}) for issue_id in issue_ids]
+            commit['linked_issues'] = issues
+        except KeyError:
+            pass
+        self.send200(commit)
+
 
     def handle_query(self):
-        ids = [sha['_id'] for sha in commit_collection.find({'bohr.200k_commits': {"$exists": True}}, {"_id": 1})]
+        collection_id = self.path[len('/ce/query/'):]
+        ids = [sha['_id'] for sha in commit_collection.find({collection_id: {"$exists": True}}, {"_id": 1})]
         print(f'Found {len(ids)} commits satisfying the query')
         self.send200(ids)
 
     def do_GET(self):
-        if self.path.startswith('/ce/commit/'):
-            self.handle_commit()
-        elif self.path.startswith('/ce/query/'):
-            self.handle_query()
+        if self.path.startswith('/ce'):
+            if self.path.startswith('/ce/commit/'):
+                self.handle_commit()
+            elif self.path.startswith('/ce/query/'):
+                self.handle_query()
+            else:
+                return self.send_error(404, f"Path not found: {self.path}")
         else:
             return http.server.SimpleHTTPRequestHandler.do_GET(self)
 
