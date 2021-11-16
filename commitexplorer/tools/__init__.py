@@ -1,3 +1,4 @@
+from commitexplorer.tools.fileminer import FileMiner
 from commitexplorer.tools.gumtree import GumTree
 from commitexplorer.tools.refactoring_miner import RefactoringMiner
 from commitexplorer.tools.spacyrunner import SpacyRunner
@@ -10,4 +11,5 @@ tool_id_map = {
     'special_commit_finder': SpecialCommitFinder,
     'gumtree': GumTree,
     'spacy': SpacyRunner,
+    'files': FileMiner,
 }
