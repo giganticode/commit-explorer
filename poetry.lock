@@ -670,6 +670,14 @@ optional = false
 python-versions = "*"
 
 [[package]]
+name = "whatthepatch"
+version = "1.0.2"
+description = "A patch parsing and application library."
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "wrapt"
 version = "1.12.1"
 description = "Module for decorators, wrappers and monkey patching."
@@ -680,7 +688,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "99dccef2b7f60111ec17c38d62b174ebd60eadf943367fa682ff3b4f35785544"
+content-hash = "4ecb72667f670c144af46199de4b3601a7763c844a55ffe34851c80bd0264af1"
 
 [metadata.files]
 blis = [
@@ -1279,6 +1287,10 @@ urllib3 = [
 wasabi = [
     {file = "wasabi-0.8.2-py3-none-any.whl", hash = "sha256:a493e09d86109ec6d9e70d040472f9facc44634d4ae6327182f94091ca73a490"},
     {file = "wasabi-0.8.2.tar.gz", hash = "sha256:b4a36aaa9ca3a151f0c558f269d442afbb3526f0160fd541acd8a0d5e5712054"},
+]
+whatthepatch = [
+    {file = "whatthepatch-1.0.2-py2.py3-none-any.whl", hash = "sha256:6d920d6c328eda006f12ec05bc9eadb405957b18460520db195f9a21eb3336e1"},
+    {file = "whatthepatch-1.0.2.tar.gz", hash = "sha256:c540ea59173e0a291e19c742dd8b406c56e2be039a600edb7c6fc3ae4bbdfa9f"},
 ]
 wrapt = [
     {file = "wrapt-1.12.1.tar.gz", hash = "sha256:b62ffa81fb85f4332a4f609cab4ac40709470da05643a082ec1eb88e6d9b97d7"},
