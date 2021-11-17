@@ -43,8 +43,6 @@ class FileMiner(Tool):
                     file_data['status'] = modification_type_to_status[file.change_type]
                 else:
                     file_data['status'] = None
-                if file.new_path is None:
-                    yield file.change_type
                 res.append(file_data)
             yield {commit.hash: res}
 
