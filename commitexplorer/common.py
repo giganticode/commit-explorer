@@ -97,12 +97,15 @@ def clone_github_project(project: Project, token: Optional[str] = None, return_m
 
 @dataclass
 class Tool(ABC):
-    version: str
+    version: Optional[str]
 
     def __post_init__(self):
         with open(project_root / 'github.token', 'r') as f:
             self.token = f.read().strip()
-        self.path = PATH_TO_TOOLS / type(self).__name__ / self.version / "bin"
+        if self.version is not None:
+            self.path = PATH_TO_TOOLS / type(self).__name__ / self.version / "bin"
+        else:
+            self.path = None
 
     @abstractmethod
     def run_on_project(self, project: Project, all_shas: List[Commit]) -> Generator[Dict[Sha, Any], None, None]:
