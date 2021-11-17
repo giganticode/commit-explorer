@@ -53,7 +53,7 @@ class JobList:
 
 def get_tool_by_id(id: str) -> Tool:
     id_parts = id.split('/')
-    tool_id, version = id_parts if len(id_parts) == 2 else id_parts, None
+    tool_id, version = id_parts if len(id_parts) == 2 else (id_parts, None)
     if tool_id not in tool_id_map:
         raise ValueError(f'Unknown tool: {tool_id}. Check job.json file')
     tool_class = tool_id_map[tool_id]
@@ -128,6 +128,11 @@ def mine(database):
         it = pool.imap_unordered(run_job, [(job, database) for job in job_list], chunksize=1)
         for _ in tqdm(it, total=len(job_list)):
             pass
+
+
+def import_dataset(database, dataset, path):
+    if dataset == 'berger':
+        import_berger(path, database)
 
 
 if __name__ == '__main__':
