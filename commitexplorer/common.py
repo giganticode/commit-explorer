@@ -132,11 +132,15 @@ class Tool(ABC):
         commit_chunk = 100
         max_seconds_per_commit = 6
         repo, metadata = clone_github_project(project, self.token, return_metadata=True)
+        n_commits = len(commits_new_to_old)
+        if n_commits > 10000:
+            print(f"Number of commits need to be processed: {n_commits}. It may take some time.")
         for commit_range in tqdm(commit_boundary_generator(commits_new_to_old, commit_chunk)):
             if limited_to_shas is not None:
                 run_this_batch = False
                 for commit in commit_range[:-1]:
                     if commit.hex in limited_to_shas:
+                        print(f"This commit range contains commit {commit.hex}")
                         run_this_batch = True
                         break
             else:
