@@ -3,15 +3,16 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional, Set
 
-from pygit2 import Commit
+import pygit2
 
 from commitexplorer.common import Tool, clone_github_project, Project, Sha, path_to_working_dir
 
 
 class SStubs(Tool):
-    def run_on_project(self, project: Project, all_shas: List[Commit]) -> Dict[Sha, Dict[str, Any]]:
+    def run_on_project(self, project: Project, all_shas: List[pygit2.Commit], limited_to_shas: Optional[Set[Sha]] = None) -> Dict[Sha, Dict[str, Any]]:
+        # TODO implement limited_to_shas
         repo, metadata = clone_github_project(project, self.token, return_metadata=True)
         if not Tool.is_java_project(metadata['langs']):
             print(f'{type(self).__name__}: not a java project, skipping ...')
@@ -43,5 +44,5 @@ class SStubs(Tool):
                         result[sha]['sstubs'].append(sstub)
             yield result
 
-    def run_on_commit(self, commit: Commit):
+    def run_on_commit(self, commit: pygit2.Commit):
         raise NotImplemented()

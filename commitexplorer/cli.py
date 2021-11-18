@@ -25,6 +25,7 @@ def get_db():
     config.read([project_root / 'config', project_root / 'config.local'])
     mongodb_uri = config[env]['mongodb_uri']
     mongodb_database_name = config[env]['mongodb_database_name']
+    print(f'Using env: {env}, mongodb_uri: {mongodb_uri}, database name: {mongodb_database_name}')
 
     db = MongoClient(mongodb_uri)[mongodb_database_name]
     return db
@@ -53,5 +54,10 @@ def show(sha: str) -> None:
 
 
 @ce.command()
-def mine() -> None:
-    m.mine(db)
+@click.option("--only-important-commits", is_flag=True)
+def mine(only_important_commits: bool) -> None:
+    m.mine(db, only_important_commits)
+
+
+if __name__ == '__main__':
+    ce()

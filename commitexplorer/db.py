@@ -1,5 +1,5 @@
 from types import SimpleNamespace
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Set
 
 import pymongo as pymongo
 from pymongo.errors import WriteError, DocumentTooLarge
@@ -14,8 +14,8 @@ DOT_REPLACEMENT = '_'
 
 def escape_dot(s: str) -> str:
     """
-    >>> escape_dot("1.0-2")
-    '1-0-2'
+    >>> escape_dot("1.0_2")
+    '1_0_2'
     """
     return s.replace('.', DOT_REPLACEMENT)
 
@@ -39,13 +39,13 @@ def save_results(results: Dict[Sha, Dict[str, Any]], project: Project, db) -> No
     ...    save_results({'abc34dbc33747830aff': {'tool1/1.0': {}, 'tool2/2.0': {}}}, SimpleNamespace(owner='giganticode', repo='bohr'), db)
     ...    save_results({'abc34dbc33747830aff': {'tool2/3.0': {}}}, SimpleNamespace(owner='giganticode', repo='bohr'), db)
     ...    db.commits.find_one({'_id': 'abc34dbc33747830aff'})
-    {'_id': 'abc34dbc33747830aff', 'owner': 'giganticode', 'repo': 'bohr', 'tool1/1-0': {}, 'tool2/2-0': {}, 'tool2/3-0': {}}
+    {'_id': 'abc34dbc33747830aff', 'owner': 'giganticode', 'repo': 'bohr', 'tool1/1_0': {}, 'tool2/2_0': {}, 'tool2/3_0': {}}
 
     >>> with TmpMongo('mongodb://localhost:27017') as db:
     ...    lots_of_data = 'a' * 1024 * 1024 * 20
     ...    save_results({'abc34dbc33747830aff': {'tool1/1.0': lots_of_data, 'tool2/2.0': {}}}, SimpleNamespace(owner='giganticode', repo='bohr'), db)
     ...    db.commits.find_one({'_id': 'abc34dbc33747830aff'})
-    {'_id': 'abc34dbc33747830aff', 'owner': 'giganticode', 'repo': 'bohr', 'tool1/1-0': {'status': 'value-too-large'}, 'tool2/2-0': {}}
+    {'_id': 'abc34dbc33747830aff', 'owner': 'giganticode', 'repo': 'bohr', 'tool1/1_0': {'status': 'value-too-large'}, 'tool2/2_0': {}}
     """
     for sha, tool_result in results.items():
         for tool_id, value in tool_result.items():
@@ -68,7 +68,7 @@ def mark_project_as_run(project: Project, tool_id: str, database):
     ...    mark_project_as_run(Project('giganticode', 'bohr'), 'tool1/1.0', db)
     ...    mark_project_as_run(Project('giganticode', 'bohr'), 'tool1/2.0', db)
     ...    db.runs.find_one({'_id': 'giganticode/bohr'})
-    {'_id': 'giganticode/bohr', 'tools': {'tool1/1-0': '20...', 'tool1/2-0': '20...'}}
+    {'_id': 'giganticode/bohr', 'tools': {'tool1/1_0': '20...', 'tool1/2_0': '20...'}}
     """
     tool_id = escape_dot(tool_id)
     database.runs.update_one({'_id': str(project)},
@@ -123,3 +123,29 @@ def get_tools_not_run_on_project(tools: List[str], project: str, database) -> Li
     already_run_tools_from_db = run['tools'].keys() if run is not None else []
     tools_not_run = [tool for tool in tools if escape_dot(tool) not in already_run_tools_from_db]
     return tools_not_run
+
+
+def get_important_commits(database) -> Dict[Project, Set[Sha]]:
+    """
+    >>> with TmpMongo('mongodb://localhost:27017') as db: # doctest: +ELLIPSIS
+    ...    res = db.commits.insert_one({'_id': 'abc34dbc33747830af1', 'manual_labels': {'herzig': 1}, 'owner': 'a', 'repo': 'b'})
+    ...    res = db.commits.insert_one({'_id': 'abc34dbc33747830af2', 'owner': 'a', 'repo': 'b'})
+    ...    res = db.commits.insert_one({'_id': 'abc34dbc33747830af3', 'manual_labels': {'berger': 0}, 'owner': 'a', 'repo': 'c'})
+    ...    res = db.commits.insert_one({'_id': 'abc34dbc33747830af4', })
+    ...    get_important_commits(db)
+    {Project(owner='a', repo='b'): {'abc34dbc33747830af1'}, Project(owner='a', repo='c'): {'abc34dbc33747830af3'}}
+    """
+    commits_from_db = database.commits.find(
+        filter={'$or': [
+            {'manual_labels.herzig': {'$exists': True}},
+            {'manual_labels.levin': {'$exists': True}},
+            {'manual_labels.berger': {'$exists': True}}
+        ]}
+    )
+    res = {}
+    for commit in commits_from_db:
+        project = Project(commit['owner'], commit['repo'])
+        if not project in res:
+            res[project] = set()
+        res[project].add(commit['_id'])
+    return res

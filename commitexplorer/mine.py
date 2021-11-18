@@ -4,16 +4,15 @@ import traceback
 from dataclasses import dataclass
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
-from typing import List, Dict, Any, Generator, Tuple
+from typing import List, Dict, Any, Generator, Tuple, Set, Optional
 
 from pygit2 import Repository, Commit
-from pymongo import MongoClient
 from tqdm import tqdm
 
 from commitexplorer import project_root
 from commitexplorer.common import Tool, clone_github_project, Sha, Project
 from commitexplorer.db import save_results, mark_project_as_run, get_already_explored_commits, \
-    get_tools_not_run_on_project
+    get_tools_not_run_on_project, get_important_commits
 from commitexplorer.tools import tool_id_map
 
 
@@ -69,7 +68,7 @@ def get_all_commits(repo: Repository) -> List[Commit]:
     return all_commits
 
 
-def run_tools_on_project(tools: List[Tuple[str, Tool]], project: Project, repo: Repository, database) -> Generator:
+def run_tools_on_project(tools: List[Tuple[str, Tool]], project: Project, repo: Repository, database, limited_to_shas: Optional[Set[Sha]] = None) -> Generator:
     all_commits_from_newest = get_all_commits(repo)
     for tool_id, tool in tools:
         try:
@@ -85,21 +84,22 @@ def run_tools_on_project(tools: List[Tuple[str, Tool]], project: Project, repo: 
                 if commit_to_start_from > 0:
                     print(f'Tool has already run on some commits, starting running tool {tool_id} '
                           f'on commit number {commit_to_start_from} counting from the newest ({all_commits_from_newest[commit_to_start_from].hex})')
-                for result_batch in tool.run_on_project(project, all_commits_from_newest[commit_to_start_from:]):
+                for result_batch in tool.run_on_project(project, all_commits_from_newest[commit_to_start_from:], limited_to_shas):
                     commit_results: Dict[Sha, Dict[str, Any]] = {}
                     for sha, commit_result in result_batch.items():
                         if sha not in commit_result:
                             commit_results[sha] = {}
                         commit_results[sha][tool_id] = commit_result
                     yield commit_results
-            mark_project_as_run(project, tool_id, database)
+            if limited_to_shas is None:
+                mark_project_as_run(project, tool_id, database)
         except Exception as ex:
             print(f"Exception: {type(ex).__name__}, {ex}, skipping tool: {tool_id}  (project: {project})")
             traceback.print_tb(ex.__traceback__)
 
 
 def run_job(param):
-    job, database = param
+    job, database, limited_to_shas = param
     with open(project_root / 'github.token') as f:
         token = f.read().strip()
     try:
@@ -108,7 +108,7 @@ def run_job(param):
             tool_ids__to_run = get_tools_not_run_on_project(job.tools, job.project, database)
             if tool_ids__to_run:
                 tools_to_run = [(tool_id, get_tool_by_id(tool_id)) for tool_id in job.tools]
-                for result_batch in run_tools_on_project(tools_to_run, job.project, repo, database):
+                for result_batch in run_tools_on_project(tools_to_run, job.project, repo, database, limited_to_shas):
                     save_results(result_batch, job.project, database)
             else:
                 print(f'Skipping {job.project}. Tools has been already run')
@@ -118,22 +118,18 @@ def run_job(param):
         traceback.print_tb(ex.__traceback__)
 
 
-def mine(database):
+def mine(database, only_important_commits):
     job_config = project_root / 'job.json'
     job_list = JobList.load_from_file(job_config)
+    limited_to_commits = get_important_commits(database) if only_important_commits else None
 
     n_processes = os.cpu_count() // 2
     print(f"Using {n_processes} processes")
     with ThreadPool(processes=n_processes) as pool:
-        it = pool.imap_unordered(run_job, [(job, database) for job in job_list], chunksize=1)
-        for _ in tqdm(it, total=len(job_list)):
+        if limited_to_commits is None:
+            job_parameters = [(job, database, None) for job in job_list]
+        else:
+            job_parameters = [(job, database, limited_to_commits[job.project]) for job in job_list if job.project in limited_to_commits]
+        it = pool.imap_unordered(run_job, job_parameters, chunksize=1)
+        for _ in tqdm(it, total=len(job_parameters)):
             pass
-
-
-def import_dataset(database, dataset, path):
-    if dataset == 'berger':
-        import_berger(path, database)
-
-
-if __name__ == '__main__':
-    mine(MongoClient('mongodb://localhost:27017')['commit_explorer_test'])

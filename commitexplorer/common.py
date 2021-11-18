@@ -5,12 +5,15 @@ import shutil
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Optional, Dict, Tuple, Union, NewType, List, Generator
+from typing import Any, Optional, Dict, Tuple, Union, NewType, List, Generator, Set
 
 import github.Repository as githubrepo
+import pydriller
 from pygit2 import clone_repository, Repository, GitError
+import pygit2
 from github import Github
 from github.GithubException import UnknownObjectException
+from tqdm import tqdm
 
 from commitexplorer import project_root
 
@@ -20,7 +23,7 @@ logger = logging.getLogger(__name__)
 Sha = NewType('Sha', str)
 
 
-@dataclass
+@dataclass(frozen=True)
 class Project:
     owner: str
     repo: str
@@ -29,7 +32,7 @@ class Project:
         return f'{self.owner}/{self.repo}'
 
 
-@dataclass
+@dataclass(frozen=True)
 class Commit:
     project: Project
     sha: Sha
@@ -95,6 +98,24 @@ def clone_github_project(project: Project, token: Optional[str] = None, return_m
     return (repo, metadata) if return_metadata else repo
 
 
+def commit_boundary_generator(lst: List, chunk_size) -> Generator[List[Any], None, None]:
+    """
+    >>> [rng for rng in commit_boundary_generator([], 2)]
+    []
+    >>> [rng for rng in commit_boundary_generator([1, 2, 3, 4], 2)]
+    [[1, 2, 3], [3, 4]]
+    >>> [rng for rng in commit_boundary_generator([1, 2, 3, 4], 3)]
+    [[1, 2, 3, 4], [4]]
+    >>> [rng for rng in commit_boundary_generator([1, 2, 3, 4], 20000)]
+    [[1, 2, 3, 4]]
+    """
+    n = len(lst)
+    for i in tqdm(range((n - 1) // chunk_size + 1)):
+        newer_index = i * chunk_size
+        older_index = min(n - 1, i * chunk_size + chunk_size)
+        yield lst[newer_index: older_index+1]
+
+
 @dataclass
 class Tool(ABC):
     version: Optional[str]
@@ -107,12 +128,34 @@ class Tool(ABC):
         else:
             self.path = None
 
-    @abstractmethod
-    def run_on_project(self, project: Project, all_shas: List[Commit]) -> Generator[Dict[Sha, Any], None, None]:
-        pass
+    def run_on_project(self, project: Project, commits_new_to_old: List[pygit2.Commit], limited_to_shas: Optional[Set[Sha]] = None) -> Generator[Dict[Sha, Any], None, None]:
+        commit_chunk = 100
+        max_seconds_per_commit = 6
+        repo, metadata = clone_github_project(project, self.token, return_metadata=True)
+        for commit_range in tqdm(commit_boundary_generator(commits_new_to_old, commit_chunk)):
+            if limited_to_shas is not None:
+                run_this_batch = False
+                for commit in commit_range[:-1]:
+                    if commit.hex in limited_to_shas:
+                        run_this_batch = True
+                        break
+            else:
+                run_this_batch = True
+            if run_this_batch:
+                commit_result = self.run_on_commit_range(commit_range, repo, timeout=commit_chunk * max_seconds_per_commit, limited_to_shas=limited_to_shas)
+                yield commit_result
+
+    def run_on_commit_range(self, commit_range: List[pygit2.Commit], repo: Repository, timeout: Optional[int] = None, limited_to_shas: Optional[Set[Sha]] = None) -> Dict[Sha, List]:
+        older_commit = commit_range[-1]
+        newer_commit = commit_range[0]
+        working_dir = str(path_to_working_dir(repo))
+        commits = pydriller.Repository(working_dir, from_commit=older_commit.hex, to_commit=newer_commit.hex).traverse_commits()
+        if limited_to_shas is not None:
+            commits = [commit for commit in commits if commit.hash in limited_to_shas]
+        return {commit.hash: self.run_on_commit(commit) for commit in commits}
 
     @abstractmethod
-    def run_on_commit(self, commit: Commit):
+    def run_on_commit(self, commit: pydriller.Commit):
         pass
 
     @staticmethod

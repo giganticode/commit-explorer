@@ -4,9 +4,10 @@ import shutil
 import subprocess
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import List, Dict, Generator, Optional, Tuple
+from typing import List, Dict, Generator, Optional, Tuple, Set
 
 import jsons
+import pygit2
 from jsons import DecodeError
 from pygit2 import Repository, GIT_RESET_HARD, Commit
 from tqdm import tqdm
@@ -37,7 +38,7 @@ class ToolNotInstalledError(Exception):
     pass
 
 
-class GumTree(Tool):
+class GumTree(Tool): # rich commit data
     @staticmethod
     def parse_output(cmd, stdout: str, stderr: str, file: str) -> Optional[List[Dict]]:
         if "No generator found for file" in stderr:
@@ -97,17 +98,18 @@ class GumTree(Tool):
             print(f"Warning: process {cmd} was interrupted because of the timeout.")
             return None
 
-    def run_on_project(self, project: Project, all_shas_new_to_old: List[Commit], timeout: Optional[int] = None) -> Generator[Dict[Sha, Dict[str, Dict]], None, None]:
+    def run_on_project(self, project: Project, commits_new_to_old: List[pygit2.Commit], timeout: Optional[int] = None, limited_to_shas: Optional[Set[Sha]] = None) -> Generator[Dict[Sha, Dict[str, Dict]], None, None]:
+        # TODO implement limited_to_shas
         repo, metadata = clone_github_project(project, self.token, return_metadata=True)
         with TemporaryDirectory() as tmp_dir:
             working_directory = path_to_working_dir(repo)
             old_repo, old_repo_path = self.copy_and_repo(working_directory, tmp_dir, 'old')
             new_repo, new_repo_path = self.copy_and_repo(working_directory, tmp_dir, 'new')
-            for i in tqdm(range(len(all_shas_new_to_old) - 1)):
-                commit = all_shas_new_to_old[i]
+            for i in tqdm(range(len(commits_new_to_old) - 1)):
+                commit = commits_new_to_old[i]
                 new_repo.reset(commit.hex, GIT_RESET_HARD)
-                if i + 1 < len(all_shas_new_to_old):
-                    previous_commit = all_shas_new_to_old[i+1]
+                if i + 1 < len(commits_new_to_old):
+                    previous_commit = commits_new_to_old[i + 1]
                     old_repo.reset(previous_commit.oid, GIT_RESET_HARD)
                 else:
                     shutil.rmtree(old_repo_path)
@@ -133,7 +135,7 @@ class GumTree(Tool):
 
                 yield {commit.hex: files}
 
-    def run_on_commit(self, commit: Commit) -> List:
+    def run_on_commit(self, commit: pygit2.Commit) -> List:
         raise NotImplemented()
 
 
