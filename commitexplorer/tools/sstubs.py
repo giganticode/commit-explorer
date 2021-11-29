@@ -5,6 +5,7 @@ import tempfile
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Set
 
+import pydriller
 import pygit2
 
 from commitexplorer.common import Tool, clone_github_project, Project, Sha, path_to_working_dir
@@ -44,5 +45,5 @@ class SStubs(Tool):
                         result[sha]['sstubs'].append(sstub)
             yield result
 
-    def run_on_commit(self, commit: pygit2.Commit):
+    def run_on_commit(self, commit: pydriller.Commit):
         raise NotImplemented()

@@ -3,7 +3,7 @@ import logging
 import os
 import shutil
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional, Dict, Tuple, Union, NewType, List, Generator, Set
 
@@ -119,6 +119,7 @@ def commit_boundary_generator(lst: List, chunk_size) -> Generator[List[Any], Non
 @dataclass
 class Tool(ABC):
     version: Optional[str]
+    lightweight_commits: bool = field(default=False, init=False)
 
     def __post_init__(self):
         with open(project_root / 'github.token', 'r') as f:
@@ -153,10 +154,12 @@ class Tool(ABC):
         older_commit = commit_range[-1]
         newer_commit = commit_range[0]
         working_dir = str(path_to_working_dir(repo))
-        commits = pydriller.Repository(working_dir, from_commit=older_commit.hex, to_commit=newer_commit.hex).traverse_commits()
+        if not self.lightweight_commits:
+            commit_range = pydriller.Repository(working_dir, from_commit=older_commit.hex, to_commit=newer_commit.hex).traverse_commits()
+        hash = 'hex' if self.lightweight_commits else 'hash'
         if limited_to_shas is not None:
-            commits = [commit for commit in commits if commit.hash in limited_to_shas]
-        return {commit.hash: self.run_on_commit(commit) for commit in commits}
+            commit_range = [commit for commit in commit_range if getattr(commit, hash) in limited_to_shas]
+        return {getattr(commit, hash): self.run_on_commit(commit) for commit in commit_range}
 
     @abstractmethod
     def run_on_commit(self, commit: pydriller.Commit):
