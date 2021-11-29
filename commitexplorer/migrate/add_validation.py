@@ -2,8 +2,8 @@ from collections import OrderedDict
 
 from pymongo import MongoClient
 
-client = MongoClient('mongodb://localhost:27017/?readPreference=primary&appname=MongoDB%20Compass&directConnection=true&ssl=false')
-db = client['commit_explorer_test']
+client = MongoClient('mongodb://10.10.20.160:27017/?readreference=primary&appname=MongoDB%20Compass&directConnection=true&ssl=false')
+db = client['commit_explorer']
 
 sha_schema = {
                  'bsonType': 'string',
@@ -209,13 +209,19 @@ commits_schema = {
                         }
                     }
                 }
+            },
+            'spacy/0_1': {
+                'bsonType': 'object'
+            },
+            'conventional_commit/0_1': {
+                'bsonType': 'object'
             }
         }
     }
 }
 
 query = [('collMod', 'commits'),
-         ('validator', commits_schema),
+         ('validator',  {'$jsonSchema': {'bsonType': 'object'}}),
          ('validationLevel', 'strict'),
          ('validationAction', 'error')]
 query = OrderedDict(query)
@@ -244,6 +250,15 @@ runs_schema = {
                         'bsonType': 'string'
                     },
                     'gumtree/3_0_0-beta2': {
+                        'bsonType': 'string'
+                    },
+                    'spacy/0_1': {
+                        'bsonType': 'string'
+                    },
+                    'files': {
+                        'bsonType': 'string'
+                    },
+                    'conventional_commit/0_1': {
                         'bsonType': 'string'
                     }
                 },
