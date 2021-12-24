@@ -5,7 +5,7 @@ import shutil
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional, Dict, Tuple, Union, NewType, List, Generator, Set
+from typing import Any, Optional, Dict, Tuple, Union, NewType, List, Generator, Set, TypeVar
 
 import github.Repository as githubrepo
 import pydriller
@@ -23,19 +23,61 @@ logger = logging.getLogger(__name__)
 Sha = NewType('Sha', str)
 
 
+class Project(ABC):
+    @abstractmethod
+    def get_url(self) -> str:
+        pass
+
+    @abstractmethod
+    def get_repo_id(self) -> str:
+        pass
+
+    @abstractmethod
+    def get_path(self) -> str:
+        pass
+
+
 @dataclass(frozen=True)
-class Project:
+class GithubProject(Project):
     owner: str
     repo: str
 
     def __str__(self):
         return f'{self.owner}/{self.repo}'
 
+    def get_url(self) -> str:
+        return f'https://github.com/{self.owner}/{self.repo}.git'
+
+    def get_repo_id(self) -> str:
+        return f'{self.owner}/{self.repo}'
+
+    def get_path(self) -> str:
+        return f'{self.owner}/{self.repo}'
+
+
+@dataclass(frozen=True)
+class GitProject(Project):
+    url: str
+
+    def get_url(self) -> str:
+        return self.url
+
+    def __str__(self):
+        return self.get_url()
+
+    def get_repo_id(self) -> str:
+        return self.get_url()
+
+    def get_path(self) -> str:
+        return f'git/{self.get_url().replace("/", "_")}'
+
+
+ProjectObj = TypeVar('ProjectObj', bound=Project)
+
 
 @dataclass(frozen=True)
 class Commit:
-    project: Project
-    sha: Sha
+    project: Union[GithubProject, GitProject]
 
 
 def path_exists_and_not_empty(path: Path) -> bool:
@@ -60,8 +102,8 @@ def load_metadata(path_to_metadata: Path, remote_repo: githubrepo.Repository):
     return metadata
 
 
-def clone_github_project(project: Project, token: Optional[str] = None, return_metadata: Optional[bool] = False) -> Optional[Union[Repository, Tuple[Repository, Dict[str, Any]]]]:
-    path_to_repo: Path = PATH_TO_REPO_CACHE / project.owner / project.repo
+def clone_project(project: ProjectObj, token: Optional[str] = None, return_metadata: Optional[bool] = False) -> Optional[Union[Repository, Tuple[Repository, Dict[str, Any]]]]:
+    path_to_repo: Path = PATH_TO_REPO_CACHE / project.get_path()
     path_to_metadata: Path = Path(str(path_to_repo) + ".metadata")
 
     if path_exists_and_not_empty(path_to_repo):
@@ -72,28 +114,34 @@ def clone_github_project(project: Project, token: Optional[str] = None, return_m
             print(f"Project {project} and metadata already exist in project cache.")
             with path_to_metadata.open() as f:
                 metadata = json.load(f)
-            try:
-                repo = Repository(path_to_repo)
-            except GitError as ex:
-                print(f'Warning: error {ex} has been raised. Removing repo at {path_to_repo} and trying to clone it one more time.')
-                shutil.rmtree(str(path_to_repo), ignore_errors=True)
-                repo = clone_github_project(project, token)
-            return (repo, metadata) if return_metadata else repo
+        else:
+            metadata = None
+        try:
+            repo = Repository(path_to_repo)
+        except GitError as ex:
+            print(f'Warning: error {ex} has been raised. Removing repo at {path_to_repo} and trying to clone it one more time.')
+            shutil.rmtree(str(path_to_repo), ignore_errors=True)
+            repo = clone_project(project, token)
+        return (repo, metadata) if return_metadata else repo
 
-    github = Github(token)
     if not path_to_repo.exists():
         path_to_repo.mkdir(parents=True)
-    try:
-        remote_repo = github.get_repo(f'{project}')
-    except UnknownObjectException:
-        print(f'Project {project} not found. Was it removed?')
-        (path_to_repo / "NOT_FOUND").touch()
-        return (None, None) if return_metadata else None
+
     path_to_repo_empty = not any(path_to_repo.iterdir())
     if path_to_repo_empty:
-        print(f"Cloning {project} from GitHub...")
-        repo = clone_repository(remote_repo.git_url, str(path_to_repo))
-    metadata = load_metadata(path_to_metadata, remote_repo)
+        print(f"Cloning {project} ...")
+        try:
+            repo = clone_repository(project.get_url(), str(path_to_repo))
+        except GitError:
+            print(f'Project {project} not found. Was it removed?')
+            (path_to_repo / "NOT_FOUND").touch()
+            return (None, None) if return_metadata else None
+    if isinstance(project, GithubProject):
+        github = Github(token)
+        remote_repo = github.get_repo(f'{project}')
+        metadata = load_metadata(path_to_metadata, remote_repo)
+    else:
+        metadata = None
 
     return (repo, metadata) if return_metadata else repo
 
@@ -129,14 +177,14 @@ class Tool(ABC):
         else:
             self.path = None
 
-    def run_on_project(self, project: Project, commits_new_to_old: List[pygit2.Commit], limited_to_shas: Optional[Set[Sha]] = None) -> Generator[Dict[Sha, Any], None, None]:
+    def run_on_project(self, project: ProjectObj, commits_new_to_old: List[pygit2.Commit], limited_to_shas: Optional[Set[Sha]] = None) -> Generator[Dict[Sha, Any], None, None]:
         commit_chunk = 100
         max_seconds_per_commit = 6
-        repo, metadata = clone_github_project(project, self.token, return_metadata=True)
+        repo, metadata = clone_project(project, self.token, return_metadata=True)
         n_commits = len(commits_new_to_old)
         if n_commits > 10000:
             print(f"Number of commits need to be processed: {n_commits}. It may take some time.")
-        for commit_range in tqdm(commit_boundary_generator(commits_new_to_old, commit_chunk)):
+        for commit_range in tqdm(commit_boundary_generator(commits_new_to_old, commit_chunk), desc="Commit chunk"):
             if limited_to_shas is not None:
                 run_this_batch = False
                 for commit in commit_range[:-1]:

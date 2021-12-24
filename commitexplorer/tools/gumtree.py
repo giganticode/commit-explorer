@@ -12,7 +12,7 @@ from jsons import DecodeError
 from pygit2 import Repository, GIT_RESET_HARD, Commit
 from tqdm import tqdm
 
-from commitexplorer.common import Tool, clone_github_project, Project, Sha, path_to_working_dir, PATH_TO_TOOLS
+from commitexplorer.common import Tool, clone_project, Sha, path_to_working_dir, PATH_TO_TOOLS, ProjectObj
 
 logger = logging.getLogger(__name__)
 
@@ -98,9 +98,9 @@ class GumTree(Tool): # rich commit data
             print(f"Warning: process {cmd} was interrupted because of the timeout.")
             return None
 
-    def run_on_project(self, project: Project, commits_new_to_old: List[pygit2.Commit], timeout: Optional[int] = None, limited_to_shas: Optional[Set[Sha]] = None) -> Generator[Dict[Sha, Dict[str, Dict]], None, None]:
+    def run_on_project(self, project: ProjectObj, commits_new_to_old: List[pygit2.Commit], timeout: Optional[int] = None, limited_to_shas: Optional[Set[Sha]] = None) -> Generator[Dict[Sha, Dict[str, Dict]], None, None]:
         # TODO implement limited_to_shas
-        repo, metadata = clone_github_project(project, self.token, return_metadata=True)
+        repo, metadata = clone_project(project, self.token, return_metadata=True)
         with TemporaryDirectory() as tmp_dir:
             working_directory = path_to_working_dir(repo)
             old_repo, old_repo_path = self.copy_and_repo(working_directory, tmp_dir, 'old')

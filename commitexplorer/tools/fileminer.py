@@ -3,7 +3,7 @@ from typing import Any
 import pydriller
 from pydriller import ModificationType
 
-from commitexplorer.common import Tool, Project
+from commitexplorer.common import Tool
 from commitexplorer.util.accuratechanges import calculate_changes
 
 
@@ -38,9 +38,3 @@ class FileMiner(Tool):
                 file_data['status'] = None
             res.append(file_data)
         return res
-
-
-if __name__ == '__main__':
-    from pprint import pprint
-    for a in FileMiner('1').run_on_project(Project('giganticode', 'bohr'), ['1']):
-        pprint(a)

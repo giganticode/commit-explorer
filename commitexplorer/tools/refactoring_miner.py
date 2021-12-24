@@ -8,9 +8,8 @@ import jsons as jsons
 import pygit2
 from jsons import DecodeError
 from pygit2 import Commit, Repository
-from tqdm import tqdm
 
-from commitexplorer.common import Tool, clone_github_project, Project, Sha, path_to_working_dir
+from commitexplorer.common import Tool, clone_project, Sha, path_to_working_dir, ProjectObj
 
 
 @dataclass
@@ -30,8 +29,8 @@ class RefactoringMiner(Tool):
     def run_on_commit(self, commit: pygit2.Commit):
         raise NotImplementedError()
 
-    def run_on_project(self, project: Project, commits_new_to_old: List[Commit], limited_to_shas: Optional[Set[Sha]] = None) -> Generator[Dict[Sha, List], None, None]:
-        repo, metadata = clone_github_project(project, self.token, return_metadata=True)
+    def run_on_project(self, project: ProjectObj, commits_new_to_old: List[Commit], limited_to_shas: Optional[Set[Sha]] = None) -> Generator[Dict[Sha, List], None, None]:
+        repo, metadata = clone_project(project, self.token, return_metadata=True)
         if not Tool.is_java_project(metadata['langs']):
             print(f'{type(self).__name__}: not a java project, skipping ...')
         else:

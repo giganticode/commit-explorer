@@ -4,13 +4,13 @@ import traceback
 from dataclasses import dataclass
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
-from typing import List, Dict, Any, Generator, Tuple, Set, Optional
+from typing import List, Dict, Any, Generator, Tuple, Set, Optional, Union
 
 from pygit2 import Repository, Commit
 from tqdm import tqdm
 
 from commitexplorer import project_root
-from commitexplorer.common import Tool, clone_github_project, Sha, Project
+from commitexplorer.common import Tool, clone_project, Sha, GithubProject, GitProject
 from commitexplorer.db import save_results, mark_project_as_run, get_already_explored_commits, \
     get_tools_not_run_on_project, get_important_commits
 from commitexplorer.tools import tool_id_map
@@ -19,13 +19,13 @@ from commitexplorer.tools import tool_id_map
 @dataclass
 class Job:
     tools: List[str]
-    project: Project
+    project: Union[GithubProject, GitProject]
 
 
 @dataclass
 class JobList:
     tools: List[str]
-    projects: List[Project]
+    projects: List[Union[GithubProject, GitProject]]
 
     def __iter__(self) -> Job:
         for project in self.projects:
@@ -41,11 +41,14 @@ class JobList:
             config = json.load(f)
 
         projects = []
-        for ps in config['projects']:
-            owner_and_repo = ps.split('/')
-            if len(owner_and_repo) != 2:
-                raise ValueError(f'Invalid job file; invalid project id: {ps}')
-            projects.append(Project(owner_and_repo[0], owner_and_repo[1]))
+        for project_id in config['projects']:
+            if project_id.endswith('.git'):
+                projects.append(GitProject(project_id))
+            else:
+                owner_and_repo = project_id.split('/')
+                if len(owner_and_repo) != 2:
+                    raise ValueError(f'Invalid job file; invalid project id: {project_id}')
+                projects.append(GithubProject(owner_and_repo[0], owner_and_repo[1]))
 
         return cls(config['tools'], projects)
 
@@ -68,7 +71,7 @@ def get_all_commits(repo: Repository) -> List[Commit]:
     return all_commits
 
 
-def run_tools_on_project(tools: List[Tuple[str, Tool]], project: Project, repo: Repository, database, limited_to_shas: Optional[Set[Sha]] = None) -> Generator:
+def run_tools_on_project(tools: List[Tuple[str, Tool]], project: GithubProject, repo: Repository, database, limited_to_shas: Optional[Set[Sha]] = None) -> Generator:
     all_commits_from_newest = get_all_commits(repo)
     for tool_id, tool in tools:
         try:
@@ -103,7 +106,7 @@ def run_job(param):
     with open(project_root / 'github.token') as f:
         token = f.read().strip()
     try:
-        repo = clone_github_project(job.project, token)
+        repo = clone_project(job.project, token)
         if repo is not None:
             tool_ids__to_run = get_tools_not_run_on_project(job.tools, job.project, database)
             if tool_ids__to_run:
@@ -129,7 +132,7 @@ def mine(database, only_important_commits):
         if limited_to_commits is None:
             job_parameters = [(job, database, None) for job in job_list]
         else:
-            job_parameters = [(job, database, limited_to_commits[job.project]) for job in job_list if job.project in limited_to_commits]
+            job_parameters = [(job, database, limited_to_commits[job.project.get_repo_id()]) for job in job_list if job.project in limited_to_commits]
         it = pool.imap_unordered(run_job, job_parameters, chunksize=1)
-        for _ in tqdm(it, total=len(job_parameters)):
+        for _ in tqdm(it, total=len(job_parameters), desc="Job"):
             pass
