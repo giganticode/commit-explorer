@@ -3,6 +3,7 @@ from pathlib import Path
 import pandas as pd
 import pymongo
 from pymongo import MongoClient, UpdateOne
+from tqdm import tqdm
 
 
 def import_levin(path, database):
@@ -114,6 +115,44 @@ def import_csv(path, name, columns, database):
     database.commits.bulk_write(operations)
 
 
+def import_idan(database):
+    with dvc.api.open('data/random_batch_18_nov_2020.csv', repo='https://github.com/evidencebp/commit-classification', rev='bfffa8700f6263719d52db979ef9d235c974a543') as f:
+        df = pd.read_csv(f)
+    df = df[df['Is_Refactor'].astype(str) != 'nan']
+
+    operations = []
+
+    def str_to_bool(s):
+        if s in ['TRUE', True]:
+            return True
+        elif s in ['flase', 'FALSE', False]:
+            return False
+        else:
+            raise ValueError(f'{s}')
+
+
+    for _, item in tqdm(df.iterrows()):
+        owner, repo = item['repo_name'].split('/')
+        update = {'$set': {
+            'message': item['message'],
+            'owner': owner,
+            'repo': repo,
+            'idan/0_1': {},
+        }}
+        fields = ['Is_Refactor', 'Is_Perfective', 'Is_Adaptive', 'Is_Corrective']
+        for field in fields:
+            if not pd.isna(item[field]):
+                update['$set']['idan/0_1'][field] = str_to_bool(item[field])
+        fields_str = ['Justification', 'Comment']
+        for field in fields_str:
+            if not pd.isna(item[field]):
+                update['$set']['idan/0_1'][field] = item[field]
+        operations.append(UpdateOne({"_id": item['commit']}, update, upsert=True))
+
+
+    database.bulk_write(operations)
+
+
 def import_all():
     path_to_dir = Path('/Users/hlib/dev/bohr/data')
     path_to_200k_commits = path_to_dir / '200k-commits.csv'
@@ -145,6 +184,7 @@ def import_all():
     database.commits.create_index([("manual_labels.krasniqi", pymongo.ASCENDING)])
     database.commits.create_index([("manual_labels.import_mauczka", pymongo.ASCENDING)])
     database.commits.create_index([("manual_labels.manual_labels.bohr.hlib", pymongo.ASCENDING)])
+    database.commits.create_index([("idan/0_1", pymongo.ASCENDING)])
 
 
 if __name__ == '__main__':
