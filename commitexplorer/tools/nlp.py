@@ -4,29 +4,10 @@ from collections import Counter
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any
 
-import jsons
 import spacy
 from spacy.tokens import Token
 
-ISSUE_REGEX = '(([A-Z]+\-)?[0-9]+)'
-URL_REGEX = "((http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-]))( )?"
-
-IDENTIFIER_REGEX = "[_a-zA-Z][_a-zA-Z0-9]*"
-COMPOUND_IDENTIFIER_REGEX = f"{IDENTIFIER_REGEX}[_A-Z][a-z]+[_a-zA-Z0-9]*"
-PATH=f'({IDENTIFIER_REGEX}[./])+'
-BRACKETS_WITH_PARAMETERS='\(.*\)'
-CLASS_NAME=f'[A-Z]({IDENTIFIER_REGEX})?'
-COMPOUND_CLASS_NAME=f'{CLASS_NAME}[_a-z]({CLASS_NAME})+'
-
-
-METHOD_NAME_WITHOUT_BRACKETS=f'[_a-z]({IDENTIFIER_REGEX})?'
-METHOD_NAME_WITH_BRACKETS=f'{METHOD_NAME_WITHOUT_BRACKETS}{BRACKETS_WITH_PARAMETERS}'
-METHOD_NAME=f'{METHOD_NAME_WITHOUT_BRACKETS}({BRACKETS_WITH_PARAMETERS})?'
-
-METHOD_NAME_HIGH_PROB=re.compile(f'(?<!\w)({METHOD_NAME_WITH_BRACKETS}|{PATH}{METHOD_NAME}|({PATH})?{CLASS_NAME}[#.]{METHOD_NAME})(?!\w)')
-CLASS_HIGH_PROB=re.compile(f'(?<!\w)({COMPOUND_CLASS_NAME}|{PATH}{CLASS_NAME})(?!\w)')
-EXCEPTION_HIGH_PROB=re.compile(f'(?<!\w){CLASS_NAME}(Error|Exception)(?!\w)')
-TEST_CLASS_HIGH_PROB=re.compile(f'(?<!\w){CLASS_NAME}Test(?!\w)')
+from commitexplorer.tools.messagecleaner import clean_message
 
 nlp = spacy.load("en_core_web_sm")
 
@@ -155,94 +136,6 @@ def get_lemma(token: Token) -> str:
     return token.lemma_.lower() if token is not None else None
 
 
-def extract_url(s: str) -> (str, Optional[str]):
-    """
-    >>> extract_url('implement feature #1 https://svn.apache.org/repos/asf/lucene/java/trunk@888780 (wip)')
-    ('implement feature #1 (wip)', ['https://svn.apache.org/repos/asf/lucene/java/trunk@888780'])
-    >>> extract_url('https://github.com and https://github.org')
-    ('and ', ['https://github.org', 'https://github.com'])
-    """
-    reg = re.compile(URL_REGEX)
-    matcher = reg.search(s)
-    urls = []
-    if matcher:
-        st, urls = extract_url(s[matcher.end():])
-        urls.append(matcher.group(1))
-        s = s[:matcher.start()] + st
-    return s, urls
-
-
-def extract_issue_at_start(s: str) -> (str, str):
-    """
-    >>> extract_issue_at_start('fix without issue reference')
-    ('fix without issue reference', None)
-    >>> extract_issue_at_start('PRJ-700: fix')
-    ('fix', 'PRJ-700')
-    >>> extract_issue_at_start('Fix bug #345: fix')
-    ('fix', '345')
-    """
-    reg = re.compile(f'(Fix Bug )?#?({ISSUE_REGEX})(:?)(\s*)', flags=re.IGNORECASE)
-    matcher = reg.search(s)
-    if matcher:
-        return s[:matcher.start()] + s[matcher.end():], matcher.group(3)
-    else:
-        return s, None
-
-
-TEST_MESSAGE = "LUCENE-3820: Wrong trailing index calculation in PatternReplaceCharFilter.\n\ngit-svn-id: https://svn.apache.org/repos/asf/lucene/dev/trunk@1294141 13f79535-47bb-0310-9956-ffa450edef68"
-
-CLEANUP_REGEXES = [re.compile(r'git-svn-id: '), re.compile('[0-9a-f]{8}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{12}')]
-
-
-def clean_up_garbage(s: str) -> str:
-    """
-    >>> clean_up_garbage('1     2 \\n\\n\\n 3 git-svn-id: https://svn.apache.org/repos/asf/lucene/dev/trunk@1294141 13f79535-47bb-0310-9956-ffa450edef68')
-    '1 2 3 https://svn.apache.org/repos/asf/lucene/dev/trunk@1294141 '
-    """
-    for regex in CLEANUP_REGEXES:
-        s = regex.sub('', s)
-    s = re.compile('\s+').sub(' ', s)
-    return s
-
-t = "- Added Unicode range to fix tokenization of Korean - http://issues.apache.org/jira/browse/LUCENE-444\n\ngit-svn-id: https://svn.apache.org/repos/asf/lucene/java/trunk@294982 13f79535-47bb-0310-9956-ffa450edef68"
-
-
-def replace_identifiers(s: str) -> str:
-    """
-    >>> replace_identifiers('add CommitExplorer#verify() method')
-    'add METHOD method'
-    >>> replace_identifiers('close() method')
-    'METHOD method'
-    >>> replace_identifiers('Class#close() method')
-    'METHOD method'
-    >>> replace_identifiers('Class#close(int a) method')
-    'METHOD method'
-    >>> replace_identifiers('Class#close method')
-    'METHOD method'
-    >>> replace_identifiers('Close class')
-    'Close class'
-    >>> replace_identifiers('java.Close class')
-    'CLASS class'
-    >>> replace_identifiers('java.dot.Close class')
-    'CLASS class'
-    >>> replace_identifiers('CloseClass class')
-    'CLASS class'
-    >>> replace_identifiers('CloseTest class')
-    'TESTCLASS class'
-    >>> replace_identifiers('CloseException class')
-    'EXCEPTION class'
-    >>> replace_identifiers('CloseTestClass class')
-    'CLASS class'
-    >>> replace_identifiers('fix JCR')
-    'fix JCR'
-    """
-    s = TEST_CLASS_HIGH_PROB.sub('TESTCLASS', s)
-    s = EXCEPTION_HIGH_PROB.sub('EXCEPTION', s)
-    s = METHOD_NAME_HIGH_PROB.sub('METHOD', s)
-    s = CLASS_HIGH_PROB.sub('CLASS', s)
-    return s
-
-
 def get_commit_cores(s: str, model) -> ParsedCommitMessage:
     """
     >>> get_commit_cores("fix some issues with code", nlp)
@@ -261,11 +154,7 @@ def get_commit_cores(s: str, model) -> ParsedCommitMessage:
     [NounPhrase(noun='range', mod='unicode')] {'add': 1, 'Unicode': 1, 'range': 1, 'fix': 1, 'tokenization': 1, 'Korean': 1} [LUCENE-444, ['http://issues.apache.org/jira/browse/https://svn.apache.org/repos/asf/lucene/java/trunk@294982']]
 
     """
-    s = s.rstrip("\n")
-    s, issue = extract_issue_at_start(s)
-    s = clean_up_garbage(s)
-    s, url = extract_url(s)
-    s = replace_identifiers(s)
+    s = clean_message(s)
 
     doc = model(s)
     sentences = [parse_sentence(sentence) for sentence in doc.sents]
