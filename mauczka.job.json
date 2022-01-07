@@ -1,0 +1,8 @@
+{"tools": ["files"], "projects": [
+  "https://gitlab.gnome.org/GNOME/vala.git",
+  "https://git.drupalcode.org/project/search_api.git",
+  "https://github.com/vala-lang/valadoc-org.git",
+  "https://github.com/mattk/mylyn.reviews.git",
+  "https://git-wip-us.apache.org/repos/asf/deltaspike.git",
+  "https://github.com/tapiji/tapiji.git"
+]}
