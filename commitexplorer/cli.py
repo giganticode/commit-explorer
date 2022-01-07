@@ -54,9 +54,8 @@ def show(sha: str) -> None:
 
 
 @ce.command()
-@click.option("--only-important-commits", is_flag=True)
-def mine(only_important_commits: bool) -> None:
-    m.mine(db, only_important_commits)
+def mine() -> None:
+    m.mine(db)
 
 
 if __name__ == '__main__':

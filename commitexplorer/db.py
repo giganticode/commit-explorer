@@ -131,7 +131,7 @@ def get_tools_not_run_on_project(tools: List[str], project: ProjectObj, database
     return tools_not_run
 
 
-def get_important_commits(database) -> Dict[GithubProject, Set[Sha]]:
+def get_important_commits(database, query) -> Dict[GithubProject, Set[Sha]]:
     """
     >>> with TmpMongo('mongodb://localhost:27017') as db: # doctest: +ELLIPSIS
     ...    res = db.commits.insert_one({'_id': 'abc34dbc33747830af1', 'manual_labels': {'herzig': 1}, 'owner': 'a', 'repo': 'b'})
@@ -142,11 +142,7 @@ def get_important_commits(database) -> Dict[GithubProject, Set[Sha]]:
     {Project(owner='a', repo='b'): {'abc34dbc33747830af1'}, Project(owner='a', repo='c'): {'abc34dbc33747830af3'}}
     """
     commits_from_db = database.commits.find(
-        filter={'$or': [
-            {'manual_labels.herzig': {'$exists': True}},
-            {'manual_labels.levin': {'$exists': True}},
-            {'manual_labels.berger': {'$exists': True}}
-        ]}
+        filter=query
     )
     res = {}
     for commit in commits_from_db:
@@ -156,5 +152,5 @@ def get_important_commits(database) -> Dict[GithubProject, Set[Sha]]:
             project = GitProject(commit['url'])
         if not project in res:
             res[project] = set()
-        res[project.get_repo_id()].add(commit['_id'])
+        res[project].add(commit['_id'])
     return res

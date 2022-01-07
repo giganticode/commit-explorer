@@ -10,7 +10,7 @@ from pygit2 import Repository, Commit
 from tqdm import tqdm
 
 from commitexplorer import project_root
-from commitexplorer.common import Tool, clone_project, Sha, GithubProject, GitProject
+from commitexplorer.common import Tool, clone_project, Sha, GithubProject, GitProject, ProjectObj
 from commitexplorer.db import save_results, mark_project_as_run, get_already_explored_commits, \
     get_tools_not_run_on_project, get_important_commits
 from commitexplorer.tools import tool_id_map
@@ -20,35 +20,46 @@ from commitexplorer.tools import tool_id_map
 class Job:
     tools: List[str]
     project: Union[GithubProject, GitProject]
+    limited_to_shas: Optional[Set[Sha]]
 
 
 @dataclass
 class JobList:
     tools: List[str]
-    projects: List[Union[GithubProject, GitProject]]
+    projects: Dict[Union[GithubProject, GitProject], Optional[Set[Sha]]]
 
     def __iter__(self) -> Job:
-        for project in self.projects:
-            yield Job(self.tools, project)
+        for project, limited_to_shas in sorted(self.projects.items(), key=lambda p: p[0].get_repo_id()):
+            yield Job(self.tools, project, limited_to_shas)
 
     def __len__(self):
         return len(self.projects)
 
-    @classmethod
-    def load_from_file(cls, path: Path) -> 'JobList':
-
-        with open(path, 'r') as f:
-            config = json.load(f)
-
-        projects = []
-        for project_id in config['projects']:
+    @staticmethod
+    def from_projects(project_names: List[str]) -> Dict[ProjectObj, Optional[Set[Sha]]]:
+        projects = {}
+        for project_id in project_names:
             if project_id.endswith('.git'):
-                projects.append(GitProject(project_id))
+                projects[GitProject(project_id)] = None
             else:
                 owner_and_repo = project_id.split('/')
                 if len(owner_and_repo) != 2:
                     raise ValueError(f'Invalid job file; invalid project id: {project_id}')
-                projects.append(GithubProject(owner_and_repo[0], owner_and_repo[1]))
+                projects[GithubProject(owner_and_repo[0], owner_and_repo[1])] = None
+        return projects
+
+    @classmethod
+    def load_from_file(cls, path: Path, database) -> 'JobList':
+
+        with open(path, 'r') as f:
+            config = json.load(f)
+
+        if 'projects' in config:
+            projects = JobList.from_projects(config['projects'])
+        elif 'commit-query' in config:
+            projects = get_important_commits(database, config['commit-query'])
+        else:
+            raise ValueError(f'Invalid job.json. Neither projects no commit-query field was found.')
 
         return cls(config['tools'], projects)
 
@@ -102,7 +113,7 @@ def run_tools_on_project(tools: List[Tuple[str, Tool]], project: GithubProject, 
 
 
 def run_job(param):
-    job, database, limited_to_shas = param
+    job, database = param
     with open(project_root / 'github.token') as f:
         token = f.read().strip()
     try:
@@ -111,7 +122,7 @@ def run_job(param):
             tool_ids__to_run = get_tools_not_run_on_project(job.tools, job.project, database)
             if tool_ids__to_run:
                 tools_to_run = [(tool_id, get_tool_by_id(tool_id)) for tool_id in job.tools]
-                for result_batch in run_tools_on_project(tools_to_run, job.project, repo, database, limited_to_shas):
+                for result_batch in run_tools_on_project(tools_to_run, job.project, repo, database, job.limited_to_shas):
                     save_results(result_batch, job.project, database)
             else:
                 print(f'Skipping {job.project}. Tools has been already run')
@@ -121,18 +132,14 @@ def run_job(param):
         traceback.print_tb(ex.__traceback__)
 
 
-def mine(database, only_important_commits):
+def mine(database):
     job_config = project_root / 'job.json'
-    job_list = JobList.load_from_file(job_config)
-    limited_to_commits = get_important_commits(database) if only_important_commits else None
+    job_list = JobList.load_from_file(job_config, database)
 
     n_processes = os.cpu_count() // 2
     print(f"Using {n_processes} processes")
     with ThreadPool(processes=n_processes) as pool:
-        if limited_to_commits is None:
-            job_parameters = [(job, database, None) for job in job_list]
-        else:
-            job_parameters = [(job, database, limited_to_commits[job.project.get_repo_id()]) for job in job_list if job.project in limited_to_commits]
+        job_parameters = [(job, database) for job in job_list]
         it = pool.imap_unordered(run_job, job_parameters, chunksize=1)
         for _ in tqdm(it, total=len(job_parameters), desc="Job"):
             pass
