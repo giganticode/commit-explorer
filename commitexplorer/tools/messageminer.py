@@ -1,10 +1,8 @@
 from typing import Any
 
-import pydriller
-from pydriller import ModificationType
+import pygit2
 
 from commitexplorer.common import Tool
-from commitexplorer.util.accuratechanges import calculate_changes
 
 
 class MessageMiner(Tool):
