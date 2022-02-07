@@ -107,7 +107,7 @@ class GumTree(Tool): # rich commit data
             new_repo, new_repo_path = self.copy_and_repo(working_directory, tmp_dir, 'new')
             for i in tqdm(range(len(commits_new_to_old) - 1)):
                 commit = commits_new_to_old[i]
-                if limited_to_shas and commit in limited_to_shas:
+                if limited_to_shas and commit not in limited_to_shas:
                     continue
                 new_repo.reset(commit.hex, GIT_RESET_HARD)
                 if i + 1 < len(commits_new_to_old):
