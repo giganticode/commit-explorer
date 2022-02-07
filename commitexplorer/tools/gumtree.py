@@ -98,9 +98,9 @@ class GumTree(Tool): # rich commit data
             print(f"Warning: process {cmd} was interrupted because of the timeout.")
             return None
 
-    def run_on_project(self, project: ProjectObj, commits_new_to_old: List[pygit2.Commit], timeout: Optional[int] = None, limited_to_shas: Optional[Set[Sha]] = None) -> Generator[Dict[Sha, Dict[str, Dict]], None, None]:
+    def run_on_project(self, project: ProjectObj, commits_new_to_old: List[pygit2.Commit], limited_to_shas: Optional[Set[Sha]] = None, timeout: Optional[int] = None) -> Generator[Dict[Sha, Dict[str, Dict]], None, None]:
         if limited_to_shas is not None:
-            print('Running tools only for selected commits ...')
+            print('Running gumtree only for selected commits ...')
         repo, metadata = clone_project(project, self.token, return_metadata=True)
         with TemporaryDirectory() as tmp_dir:
             working_directory = path_to_working_dir(repo)
