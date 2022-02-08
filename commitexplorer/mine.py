@@ -61,7 +61,10 @@ class JobList:
         if 'projects' in config:
             projects = JobList.from_projects(config['projects'])
         elif 'commit-query' in config:
+            logger.info('Commit query is passed. Quering commits that need to be mined ...')
             projects = get_important_commits(database, config['commit-query'])
+            n_commits = len([c for project_commits in projects.values() for c in project_commits])
+            logger.info(f'Running tools for {n_commits} commits ...')
         else:
             raise ValueError(f'Invalid job.json. Neither projects no commit-query field was found.')
 
