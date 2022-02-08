@@ -2,7 +2,7 @@ import jsons
 import pydriller
 
 from commitexplorer.common import Tool
-from commitexplorer.tools.nlp import get_commit_cores, nlp
+# from commitexplorer.tools.nlp import get_commit_cores, nlp
 
 
 class SpacyRunner(Tool):
