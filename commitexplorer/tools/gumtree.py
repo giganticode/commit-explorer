@@ -106,7 +106,7 @@ class GumTree(Tool): # rich commit data
             working_directory = path_to_working_dir(repo)
             old_repo, old_repo_path = self.copy_and_repo(working_directory, tmp_dir, 'old')
             new_repo, new_repo_path = self.copy_and_repo(working_directory, tmp_dir, 'new')
-            for i in tqdm(range(len(commits_new_to_old) - 1), desc='Processing commits'):
+            for i in tqdm(range(len(commits_new_to_old) - 1), desc='Project {project} - commits :'):
                 commit = commits_new_to_old[i]
                 if limited_to_shas and commit.hex not in limited_to_shas:
                     continue
@@ -117,7 +117,7 @@ class GumTree(Tool): # rich commit data
                 else:
                     shutil.rmtree(old_repo_path)
                 files = []
-                for patch in tqdm(commit.tree.diff_to_tree(previous_commit.tree), desc='Processing files'):
+                for patch in tqdm(commit.tree.diff_to_tree(previous_commit.tree), desc=f'Project {project} - files:'):
                     delta = patch.delta
                     dct = {'file': delta.new_file.path}
                     try:

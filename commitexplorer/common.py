@@ -12,7 +12,6 @@ import pydriller
 from pygit2 import clone_repository, Repository, GitError
 import pygit2
 from github import Github
-from github.GithubException import UnknownObjectException
 from tqdm import tqdm
 
 from commitexplorer import project_root
@@ -108,10 +107,10 @@ def clone_project(project: ProjectObj, token: Optional[str] = None, return_metad
 
     if path_exists_and_not_empty(path_to_repo):
         if (path_to_repo / "NOT_FOUND").exists():
-            print(f"We already tried to mine the project {project} but it was not found.")
+            logger.warning(f"We already tried to mine the project {project} but it was not found.")
             return (None, None) if return_metadata else None
         if path_to_metadata.exists():
-            print(f"Project {project} and metadata already exist in project cache.")
+            logger.info(f"Project {project} and metadata already exist in project cache.")
             with path_to_metadata.open() as f:
                 metadata = json.load(f)
         else:
@@ -119,7 +118,7 @@ def clone_project(project: ProjectObj, token: Optional[str] = None, return_metad
         try:
             repo = Repository(path_to_repo)
         except GitError as ex:
-            print(f'Warning: error {ex} has been raised. Removing repo at {path_to_repo} and trying to clone it one more time.')
+            logger.warning(f'Error {ex} has been raised. Removing repo at {path_to_repo} and trying to clone it one more time.')
             shutil.rmtree(str(path_to_repo), ignore_errors=True)
             repo = clone_project(project, token)
         return (repo, metadata) if return_metadata else repo
@@ -129,11 +128,11 @@ def clone_project(project: ProjectObj, token: Optional[str] = None, return_metad
 
     path_to_repo_empty = not any(path_to_repo.iterdir())
     if path_to_repo_empty:
-        print(f"Cloning {project} ...")
+        logger.debug(f"Cloning {project} ...")
         try:
             repo = clone_repository(project.get_url(), str(path_to_repo))
         except GitError:
-            print(f'Project {project} not found. Was it removed?')
+            logger.warning(f'Project {project} not found. Was it removed?')
             (path_to_repo / "NOT_FOUND").touch()
             return (None, None) if return_metadata else None
     if isinstance(project, GithubProject):
@@ -158,7 +157,7 @@ def commit_boundary_generator(lst: List, chunk_size) -> Generator[List[Any], Non
     [[1, 2, 3, 4]]
     """
     n = len(lst)
-    for i in tqdm(range((n - 1) // chunk_size + 1)):
+    for i in range((n - 1) // chunk_size + 1):
         newer_index = i * chunk_size
         older_index = min(n - 1, i * chunk_size + chunk_size)
         yield lst[newer_index: older_index+1]
@@ -183,13 +182,13 @@ class Tool(ABC):
         repo, metadata = clone_project(project, self.token, return_metadata=True)
         n_commits = len(commits_new_to_old)
         if n_commits > 10000:
-            print(f"Number of commits need to be processed: {n_commits}. It may take some time.")
-        for commit_range in tqdm(commit_boundary_generator(commits_new_to_old, commit_chunk), desc="Commit chunk"):
+            logger.info(f"Number of commits need to be processed: {n_commits}. It may take some time.")
+        for commit_range in tqdm(commit_boundary_generator(commits_new_to_old, commit_chunk), desc="Commit chunks: "):
             if limited_to_shas is not None:
                 run_this_batch = False
                 for commit in commit_range[:-1]:
                     if commit.hex in limited_to_shas:
-                        print(f"This commit range contains commit {commit.hex}")
+                        logger.info(f"This commit range contains commit {commit.hex}")
                         run_this_batch = True
                         break
             else:
@@ -241,10 +240,10 @@ try:
     PATH_TO_STORAGE = Path(os.environ['COMMIT_EXPLORER_STORAGE'])
 except KeyError:
     PATH_TO_STORAGE = project_root / 'storage'
-    print(f"Warning: COMMIT_EXPLORER_STORAGE env variable not set -- using : {PATH_TO_STORAGE}.")
+    logger.warning(f"COMMIT_EXPLORER_STORAGE env variable not set -- using : {PATH_TO_STORAGE}.")
 
 try:
     PATH_TO_REPO_CACHE = Path(os.environ['COMMIT_EXPLORER_REPO_CACHE'])
 except KeyError:
     PATH_TO_REPO_CACHE = project_root / 'repo-cache'
-    print(f"Warning: COMMIT_EXPLORER_REPO_CACHE env variable not set -- using: {PATH_TO_REPO_CACHE}.")
+    logger.warning(f"COMMIT_EXPLORER_REPO_CACHE env variable not set -- using: {PATH_TO_REPO_CACHE}.")

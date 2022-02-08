@@ -25,7 +25,7 @@ def get_db():
     config.read([project_root / 'config', project_root / 'config.local'])
     mongodb_uri = config[env]['mongodb_uri']
     mongodb_database_name = config[env]['mongodb_database_name']
-    print(f'Using env: {env}, mongodb_uri: {mongodb_uri}, database name: {mongodb_database_name}')
+    logger.info(f'Using env: {env}, mongodb_uri: {mongodb_uri}, database name: {mongodb_database_name}')
 
     db = MongoClient(mongodb_uri)[mongodb_database_name]
     return db

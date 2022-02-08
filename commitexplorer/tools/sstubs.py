@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import subprocess
 import tempfile
@@ -11,12 +12,15 @@ import pygit2
 from commitexplorer.common import Tool, clone_project, GithubProject, Sha, path_to_working_dir
 
 
+logger = logging.getLogger(__name__)
+
+
 class SStubs(Tool):
     def run_on_project(self, project: GithubProject, all_shas: List[pygit2.Commit], limited_to_shas: Optional[Set[Sha]] = None) -> Dict[Sha, Dict[str, Any]]:
         # TODO implement limited_to_shas
         repo, metadata = clone_project(project, self.token, return_metadata=True)
         if not Tool.is_java_project(metadata['langs']):
-            print(f'{type(self).__name__}: not a java project, skipping ...')
+            logger.info(f'{type(self).__name__}: not a java project, skipping ...')
         else:
             with tempfile.TemporaryDirectory() as f:
                 project_path = Path(f) / 'project'

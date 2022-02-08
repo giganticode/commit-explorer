@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import traceback
 from dataclasses import dataclass
@@ -14,6 +15,9 @@ from commitexplorer.common import Tool, clone_project, Sha, GithubProject, GitPr
 from commitexplorer.db import save_results, mark_project_as_run, get_already_explored_commits, \
     get_tools_not_run_on_project, get_important_commits
 from commitexplorer.tools import tool_id_map
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -76,7 +80,7 @@ def get_tool_by_id(id: str) -> Tool:
 
 def get_all_commits(repo: Repository) -> List[Commit]:
     if repo.is_empty:
-        print(f'Warning: repo at {repo.path} has no commits.')
+        logger.warning(f'Repo at {repo.path} has no commits.')
         return []
     all_commits = [commit for commit in repo.walk(repo.head.target)]
     return all_commits
@@ -93,10 +97,10 @@ def run_tools_on_project(tools: List[Tuple[str, Tool]], project: GithubProject, 
                     commit_to_start_from = i
                     break
             if commit_to_start_from == len(all_commits_from_newest):
-                print(f"Tool {tool_id} is already run on all commits ... marking the project as run ")
+                logger.info(f"Tool {tool_id} is already run on all commits ... marking the project as run ")
             else:
                 if commit_to_start_from > 0:
-                    print(f'Tool has already run on some commits, starting running tool {tool_id} '
+                    logger.info(f'Tool has already run on some commits, starting running tool {tool_id} '
                           f'on commit number {commit_to_start_from} counting from the newest ({all_commits_from_newest[commit_to_start_from].hex})')
                 for result_batch in tool.run_on_project(project, all_commits_from_newest[commit_to_start_from:], limited_to_shas):
                     commit_results: Dict[Sha, Dict[str, Any]] = {}
@@ -108,7 +112,7 @@ def run_tools_on_project(tools: List[Tuple[str, Tool]], project: GithubProject, 
             if limited_to_shas is None:
                 mark_project_as_run(project, tool_id, database)
         except Exception as ex:
-            print(f"Exception: {type(ex).__name__}, {ex}, skipping tool: {tool_id}  (project: {project})")
+            logger.exception(f"Exception: {type(ex).__name__}, {ex}, skipping tool: {tool_id}  (project: {project})")
             traceback.print_tb(ex.__traceback__)
 
 
@@ -125,10 +129,10 @@ def run_job(param):
                 for result_batch in run_tools_on_project(tools_to_run, job.project, repo, database, job.limited_to_shas):
                     save_results(result_batch, job.project, database)
             else:
-                print(f'Skipping {job.project}. Tools has been already run')
+                logger.info(f'Skipping {job.project}. Tools has been already run')
             return job.project
     except Exception as ex:
-        print(f"Exception: {type(ex).__name__}, {ex}, skipping project: {job.project}")
+        logger.exception(f"Exception: {type(ex).__name__}, {ex}, skipping project: {job.project}")
         traceback.print_tb(ex.__traceback__)
 
 
@@ -137,9 +141,9 @@ def mine(database):
     job_list = JobList.load_from_file(job_config, database)
 
     n_processes = os.cpu_count() // 2
-    print(f"Using {n_processes} processes")
+    logger.info(f"Using {n_processes} processes")
     with ThreadPool(processes=n_processes) as pool:
         job_parameters = [(job, database) for job in job_list]
         it = pool.imap_unordered(run_job, job_parameters, chunksize=1)
-        for _ in tqdm(it, total=len(job_parameters), desc="Job"):
+        for _ in tqdm(it, total=len(job_parameters), desc="Jobs: "):
             pass
