@@ -1,5 +1,5 @@
 [DEFAULT]
-mongodb_uri = mongodb://localhost:27017
+mongodb_uri = mongodb://read-only-user:123@localhost:27017
 
 [prod]
 mongodb_database_name = commit_explorer
