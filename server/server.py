@@ -17,23 +17,6 @@ issue_collection = client['commit_explorer']['issues']
 class MyHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, request, client_address, server, directory=None):
         super().__init__(request, client_address, server)
-
-    def send200(self, payload):
-
-from pymongo import MongoClient
-
-PORT = 8180
-
-sha_regex=re.compile('[0-9a-f]{40}')
-
-client = MongoClient('mongodb://localhost:27017')
-commit_collection = client['commit_explorer']['commits']
-issue_collection = client['commit_explorer']['issues']
-
-
-class MyHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
-    def __init__(self, request, client_address, server, directory=None):
-        super().__init__(request, client_address, server)
         super().__init__(request, client_address, server)
 
     def send200(self, payload):
