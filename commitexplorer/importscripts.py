@@ -2,7 +2,9 @@ from pathlib import Path
 
 import pandas as pd
 import pymongo
+import requests
 from pymongo import MongoClient, UpdateOne
+from pymongo.results import UpdateResult
 from tqdm import tqdm
 
 
@@ -99,6 +101,32 @@ def import_200k(path_commits, path_files, database):
     database.commits.bulk_write(operations)
 
 
+def import_herzig_tangled(database):
+    a = requests.get('https://raw.githubusercontent.com/kimherzig/untangling_changes/master/atomic_fixes/jruby/jruby_atomic_fixes.csv')
+    atomic_shas = a.text.split('\n')
+    count = 0
+    for sha in atomic_shas:
+        update_result = database.commits.update_one({'_id': sha}, {"$set": {"manual_labels.herzig_tangled.tangled": False}})
+        if update_result.raw_result['n'] == 1:
+            count += 1
+        else:
+            print(f'Not foudn sha: {sha}')
+
+    print(f'Set {count} out of {len(atomic_shas)} atomic commits')
+
+    b = requests.get('https://raw.githubusercontent.com/kimherzig/untangling_changes/master/obvious_blobs/jruby/jruby_obvious_blobs.csv')
+    lines = b.text.split('\n')[1:]
+    blob_shas = [line.split(',')[0] for line in lines]
+    count_blobs = 0
+    for sha in blob_shas:
+        update_result = database.commits.update_one({'_id': sha}, {"$set": {"manual_labels.herzig_tangled.tangled": True}})
+        if update_result.raw_result['n'] == 1:
+            count_blobs += 1
+
+    print(f'Set {count_blobs} out of {len(blob_shas)} tangled commits')
+
+
+
 def import_csv(path, name, columns, database):
     df = pd.read_csv(path)
     operations = []
@@ -188,4 +216,5 @@ def import_all():
 
 
 if __name__ == '__main__':
-    import_all()
+    database = MongoClient('mongodb://localhost:27017')['commit_explorer_test']
+    import_herzig_tangled(database)

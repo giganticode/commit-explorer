@@ -260,7 +260,10 @@ runs_schema = {
                     },
                     'conventional_commit/0_1': {
                         'bsonType': 'string'
-                    }
+                    },
+                    'message': {
+                        'bsonType': 'string'
+                    },
                 },
                 'additionalProperties': False
             }
